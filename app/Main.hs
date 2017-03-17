@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import Deadline
 
 main :: IO ()
-main = run
+main = runDeadline
