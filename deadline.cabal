@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   ghc-options:         -Wall -fno-warn-type-defaults
-  exposed-modules:     Deadline , Narek , Types
+  exposed-modules:     Deadline , Narek , Types , Anny , John , Kate
   build-depends:       base >= 4.7 && < 5
                      , gloss
                      , random

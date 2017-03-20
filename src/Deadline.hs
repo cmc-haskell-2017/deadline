@@ -6,7 +6,9 @@ import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Interface.Pure.Game
 import Types
 import Narek
-
+import John
+import Anny
+import Kate
 
 -- | Запустить игру «Deadline».
 runDeadline :: IO ()
