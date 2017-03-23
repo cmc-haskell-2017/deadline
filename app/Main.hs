@@ -3,4 +3,6 @@ module Main where
 import Deadline
 
 main :: IO ()
-main = runDeadline
+main = do
+	images <- loadImages
+ 	runDeadline images
