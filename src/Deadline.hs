@@ -4,6 +4,8 @@ import System.Random
 import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Interface.Pure.Game
+import Graphics.Gloss.Interface.Pure.Simulate
+import Graphics.Gloss.Juicy
 import Types
 import Narek
 import John
@@ -11,14 +13,24 @@ import Anny
 import Kate
 
 -- | Запустить игру «Deadline».
-runDeadline :: IO ()
-runDeadline = do
+runDeadline :: Images -> IO ()
+runDeadline images = do
   g <- newStdGen
-  play display bgColor fps (initUniverse g) drawUniverse handleUniverse updateUniverse
+  play display bgColor fps (initUniverse g) (drawUniverse images) handleUniverse updateUniverse
   where
     display = InWindow "DEADLINE" (screenWidth, screenHeight) (200, 200)
     bgColor = white   -- цвет фона
     fps     = 60      -- кол-во кадров в секунду
+
+-- | Загрузить изображения из файлов.
+loadImages :: IO Images
+loadImages = do
+  Just pers   <- loadJuicyPNG "src/pers.png"
+  Just bgrd   <- loadJuicyPNG "src/background.png"
+  return Images
+    { imagePers   = scale 3 3 pers
+    , imageBackground = scale 3 3 bgrd 
+    }
 
 -- =========================================
 -- Модель игровой вселенной
@@ -27,176 +39,120 @@ runDeadline = do
 -- | Инициализировать игровую вселенную, используя генератор случайных значений.
 initUniverse :: StdGen -> Universe
 initUniverse g = Universe
-  { universeGates  = initGates g
+  { universePlatforms  = initPlatforms g
   , universePlayer = initPlayer
   , universeScore  = 0
+  , universeBorders = 0
+  , universeBackground = 0
   }
 
 -- | Начальное состояние игрока.
 initPlayer :: Player
 initPlayer = Player
-  { playerHeight = 0
-  , playerSpeed  = 0
+  { playerHeight = 300
+  , playerWidth = 0
+  , isOnPlatformNow = False
+  , playerSpeed = 0
+  , playerFallingSpeed  = 0
   }
 
 -- | Инициализировать одни ворота.
-initGate :: Height -> Gate
-initGate h = (defaultOffset, h)
+initPlatform :: Width -> Platform
+initPlatform h = (h, defaultOffset)
 
 -- | Инициализировать случайный бесконечный
 -- список ворот для игровой вселенной.
-initGates :: StdGen -> [Gate]
-initGates g = map initGate
-  (randomRs gateHeightRange g)
-
--- | Рассчитать абсолютное положение ворот.
-absoluteGates :: [Gate] -> [Gate]
-absoluteGates = go 0
-  where
-    go _ [] = []
-    go s ((o, h) : gs) = (o + s, h) : go (s + o) gs
+initPlatforms :: StdGen -> [Platform]
+initPlatforms g = map initPlatform
+  (randomRs platformWidthRange g)
 
 -- =========================================
 -- Отрисовка игровой вселенной
 -- =========================================
 
 -- | Отобразить игровую вселенную.
-drawUniverse :: Universe -> Picture
-drawUniverse u = pictures
-  [ drawGates  (universeGates u)
-  , drawPlayer (universePlayer u)
+drawUniverse :: Images -> Universe -> Picture
+drawUniverse images u = pictures
+  [ drawBackground (imageBackground images)
+  , drawPlatforms  (universePlatforms u)
+  , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
+  , drawBorders
   , drawScore  (universeScore u)
   ]
-
--- | Отобразить все ворота игровой вселенной, вмещающиеся в экран.
-drawGates :: [Gate] -> Picture
-drawGates = pictures . map drawGate . takeWhile onScreen . absoluteGates
-  where
-    onScreen (offset, _) = offset - gateWidth < screenRight
-
--- | Нарисовать одни ворота.
-drawGate :: Gate -> Picture
-drawGate = color white . pictures . map drawBox . gateBoxes
-  where
-    drawBox ((l, b), (r, t)) = polygon
-      [ (l, b), (r, b), (r, t), (l, t) ]
-
--- | Нарисовать игрока.
-drawPlayer :: Player -> Picture
-drawPlayer player = color black drawLambda
-  where
-    drawLambda = pictures (map polygon (playerPolygons player))
 
 -- | Нарисовать счёт в левом верхнем углу экрана.
 drawScore :: Score -> Picture
 drawScore score = translate (-w) h (scale 30 30 (pictures
-  [ color white (polygon [ (0, 0), (0, -2), (6, -2), (6, 0) ])            -- белая рамка
-  , color black (polygon [ (0, 0), (0, -1.9), (5.9, -1.9), (5.9, 0) ])    -- чёрные внутренности
-  , translate 2 (-1.5) (scale 0.01 0.01 (color red (text (show score))))  -- красный счёт
+  [ color red (polygon [ (0, 0), (0, -2), (3, -2), (3, 0) ])            -- красный квадрат
+  , translate 1 (-1.5) (scale 0.01 0.01 (color black (text (show score))))  -- черный счёт
   ]))
   where
     w = fromIntegral screenWidth  / 2
     h = fromIntegral screenHeight / 2
 
 
--- | Многоугольники ворот.
-gateBoxes :: Gate -> [(Point, Point)]
-gateBoxes (x, y)
-  = [ ((x - w, y + s), (x + w, y + s + h))
-    , ((x - w, y - s - h), (x + w, y - s))
-    ]
-  where
-    w = gateWidth / 2
-    s = gateSize / 2
-    h = fromIntegral screenHeight
-
--- =========================================
--- Обработка событий
--- =========================================
-
--- | Обработчик событий игры.
-handleUniverse :: Event -> Universe -> Universe
-handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) = bumpPlayer
-handleUniverse _ = id
-
--- | Подпрыгнуть (игроком), если можно.
-bumpPlayer :: Universe -> Universe
-bumpPlayer u = u
-  { universePlayer = bump (universePlayer u)
-  }
-  where
-    bump player
-      | playerSpeed player < 0
-          = player { playerSpeed = bumpSpeed }
-      | otherwise = player
-
--- =========================================
--- Обновление игровой вселенной
--- =========================================
-
 -- | Обновить состояние игровой вселенной.
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
-  | isGameOver u = resetUniverse u
+  | isOnPlatform u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
+      , universePlayer = updatePlayer True dt (universePlayer u)
+      , universeScore  = universeScore u + scorePlatforms (universePlatforms u)
+      }
   | otherwise = u
-      { universeGates  = updateGates  dt (universeGates  u)
-      , universePlayer = updatePlayer dt (universePlayer u)
-      , universeScore  = universeScore u + scoreGates (universeGates u)
+      { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
+      , universePlayer = updatePlayer False dt (universePlayer u)
+      , universeScore  = universeScore u + scorePlatforms (universePlatforms u)
       }
   where
-    scoreGates = length . takeWhile isPast . dropWhile wasPast . absoluteGates
+    scorePlatforms = length . takeWhile isPast . dropWhile wasPast . absolutePlatforms
     -- ворота окажутся позади игрока в этом кадре?
-    isPast (offset, _) = offset + gateWidth / 2 - dt * speed < 0
+    isPast (offset, _) = offset + platformWidth / 2 - dt * speed < 0
     -- ворота уже были позади игрока в предыдущем кадре?
-    wasPast (offset, _) = offset + gateWidth / 2 < 0
+    wasPast (offset, _) = offset + platformWidth / 2 < 0
 
--- | Обновить состояние игрока.
--- Игрок не может прыгнуть выше потолка.
-updatePlayer :: Float -> Player -> Player
-updatePlayer dt player = player
-  { playerHeight = min h (playerHeight player + dt * playerSpeed player)
-  , playerSpeed  = playerSpeed player + dt * gravity
-  }
-  where
-    h = fromIntegral screenHeight / 2
 
--- | Обновить ворота игровой вселенной.
-updateGates :: Float -> [Gate] -> [Gate]
-updateGates _ [] = []
-updateGates dt ((offset, height) : gates)
-  | dx > pos  = updateGates dt' gates
-  | otherwise = (offset - dx, height) : gates
-  where
-    pos = offset - screenLeft + gateWidth
-    dx  = dt * speed
-    dt' = dt - offset / speed
+
 
 -- | Сбросить игру (начать с начала со случайными воротами).
 resetUniverse :: Universe -> Universe
 resetUniverse u = u
-  { universeGates  = tail (universeGates u)
+  { universePlatforms  = tail (universePlatforms u)
   , universePlayer = initPlayer
   , universeScore  = 0
   }
 
 -- | Конец игры?
-isGameOver :: Universe -> Bool
-isGameOver u = playerBelowFloor || playerHitsGate
+isOnPlatform :: Universe -> Bool
+isOnPlatform u = playerBelowFloor || playerHitsPlatform
   where
-    playerHitsGate   = collision (universePlayer u) (universeGates u)
+    playerHitsPlatform   = collision (universePlayer u) (universePlatforms u)
+    playerBelowFloor = playerHeight (universePlayer u) < - fromIntegral screenHeight
+
+    -- | Конец игры?
+wasOnPlatform :: Player -> Bool
+wasOnPlatform player = (isOnPlatformNow player)
+  
+-- | Конец игры?
+isGameOver :: Universe -> Bool
+isGameOver u = playerBelowFloor || playerHitsPlatform
+  where
+    playerHitsPlatform   = collision (universePlayer u) (universePlatforms u)
     playerBelowFloor = playerHeight (universePlayer u) < - fromIntegral screenHeight
 
 -- | Сталкивается ли игрок с любыми из
 -- бесконечного списка ворот?
-collision :: Player -> [Gate] -> Bool
-collision _ _ = False -- реализуйте эту функцию самостоятельно
+collision :: Player -> [Platform] -> Bool
+collision _ [] = False
+collision player platforms = or (map (collides player) (takeWhile onScreen (absolutePlatforms platforms)))
+  where
+    onScreen (_, offset) = offset - platformHeight< screenUp
 
 -- | Сталкивается ли игрок с воротами?
-collides :: Player -> Gate -> Bool
-collides player gate = or
+collides :: Player -> Platform -> Bool
+collides player platform = or
   [ polygonBoxCollides polygon box
   | polygon <- playerPolygons player
-  , box     <- gateBoxes gate ]
+  , box     <- platformBoxes platform ]
 
 -- | Упрощённая проверка на пересечение многоугольников.
 polygonBoxCollides :: Path -> (Point, Point) -> Bool
@@ -204,57 +160,45 @@ polygonBoxCollides xs (lb, rt) = or
   [ not (segClearsBox p1 p2 lb rt)
   | (p1, p2) <- zip xs (tail (cycle xs)) ]
 
+absoluteValue :: Float -> Float
+absoluteValue n | n >= 0 = n
+                | otherwise  = -n
+
+
+-- | Обновить состояние игрока.
+-- Игрок не может прыгнуть выше потолка.
+updatePlayer :: Bool -> Float -> Player -> Player
+updatePlayer True dt player 
+  | wasOnPlatform player = player
+  { playerHeight = playerHeight player + dt * speed
+  , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
+  , playerFallingSpeed  = 0
+  , playerSpeed = playerSpeed player
+  , isOnPlatformNow = True
+  }
+  | otherwise = player
+  { playerHeight = playerHeight player + dt * speed
+  , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
+  , playerFallingSpeed  = 0
+  , playerSpeed = 0
+  , isOnPlatformNow = True
+  }
+   where
+    h = fromIntegral screenHeight / 2
+    w = 200
+    wm = -200
+
+updatePlayer False dt player = player
+  { playerHeight = playerHeight player + dt * playerFallingSpeed player
+  , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
+  , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
+  , playerSpeed = playerSpeed player
+  , isOnPlatformNow = False
+  }
+  where
+    h = fromIntegral screenHeight / 2
+    w = 200
+    wm = -200
 -- =========================================
 -- Константы, параметры игры
 -- =========================================
-
--- | Ширина экрана.
-screenWidth :: Int
-screenWidth = 450
-
--- | Высота экрана.
-screenHeight :: Int
-screenHeight = 800
-
--- | Положение правого края экрана.
-screenRight :: Offset
-screenRight = fromIntegral screenWidth / 2
-
--- | Положение левого края экрана.
-screenLeft :: Offset
-screenLeft = - fromIntegral screenWidth / 2
-
--- | Ширина стенок ворот.
-gateWidth :: Float
-gateWidth = 40
-
--- | Размер проёма ворот.
-gateSize :: Float
-gateSize = 150
-
--- | Расстояние между воротами.
-defaultOffset :: Offset
-defaultOffset = 300
-
--- | Диапазон высот ворот.
-gateHeightRange :: (Height, Height)
-gateHeightRange = (-h, h)
-  where
-    h = (fromIntegral screenHeight - gateWidth) / 2
-
--- | Скорость движения игрока по вселенной (в пикселях в секунду).
-speed :: Float
-speed = 100
-
--- | Положение игрока по горизонтали.
-playerOffset :: Offset
-playerOffset = screenLeft + 200
-
--- | Ускорение свободного падения.
-gravity :: Float
-gravity = -0
-
--- | Скорость после "подпрыгивания".
-bumpSpeed :: Float
-bumpSpeed = 400
-
