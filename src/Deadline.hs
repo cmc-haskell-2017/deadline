@@ -56,12 +56,12 @@ initPlayer = Player
   , playerFallingSpeed  = 0
   }
 
--- | Инициализировать одни ворота.
+-- | Инициализировать одну платформу
 initPlatform :: Width -> Platform
 initPlatform h = (h, defaultOffset)
 
 -- | Инициализировать случайный бесконечный
--- список ворот для игровой вселенной.
+-- список платформ для игровой вселенной
 initPlatforms :: StdGen -> [Platform]
 initPlatforms g = map initPlatform
   (randomRs platformWidthRange g)
@@ -80,7 +80,7 @@ drawUniverse images u = pictures
   , drawScore  (universeScore u)
   ]
 
--- | Нарисовать счёт в левом верхнем углу экрана.
+-- | Нарисовать счёт в левом верхнем углу экрана
 drawScore :: Score -> Picture
 drawScore score = translate (-w) h (scale 30 30 (pictures
   [ color red (polygon [ (0, 0), (0, -2), (3, -2), (3, 0) ])            -- красный квадрат
@@ -105,15 +105,15 @@ updateUniverse dt u
       }
   where
     scorePlatforms = length . takeWhile isPast . dropWhile wasPast . absolutePlatforms
-    -- ворота окажутся позади игрока в этом кадре?
+    -- платформы окажутся внизу игрока в этом кадре?
     isPast (offset, _) = offset + platformWidth / 2 - dt * speed < 0
-    -- ворота уже были позади игрока в предыдущем кадре?
+    -- ворота уже были внизу игрока в предыдущем кадре?
     wasPast (offset, _) = offset + platformWidth / 2 < 0
 
 
 
 
--- | Сбросить игру (начать с начала со случайными воротами).
+-- | Сбросить игру (начать с начала со случайными платформами).
 resetUniverse :: Universe -> Universe
 resetUniverse u = u
   { universePlatforms  = tail (universePlatforms u)
@@ -128,7 +128,7 @@ isOnPlatform u = playerBelowFloor || playerHitsPlatform
     playerHitsPlatform   = collision (universePlayer u) (universePlatforms u)
     playerBelowFloor = playerHeight (universePlayer u) < - fromIntegral screenHeight
 
-    -- | Конец игры?
+-- | Конец игры?
 wasOnPlatform :: Player -> Bool
 wasOnPlatform player = (isOnPlatformNow player)
   
@@ -140,21 +140,21 @@ isGameOver u = playerBelowFloor || playerHitsPlatform
     playerBelowFloor = playerHeight (universePlayer u) < - fromIntegral screenHeight
 
 -- | Сталкивается ли игрок с любыми из
--- бесконечного списка ворот?
+-- бесконечного списка платформ?
 collision :: Player -> [Platform] -> Bool
 collision _ [] = False
 collision player platforms = or (map (collides player) (takeWhile onScreen (absolutePlatforms platforms)))
   where
     onScreen (_, offset) = offset - platformHeight< screenUp
 
--- | Сталкивается ли игрок с воротами?
+-- | Сталкивается ли игрок с платформами?
 collides :: Player -> Platform -> Bool
 collides player platform = or
   [ polygonBoxCollides polygon box
   | polygon <- playerPolygons player
   , box     <- platformBoxes platform ]
 
--- | Упрощённая проверка на пересечение многоугольников.
+-- | Упрощённая проверка на пересечение многоугольников
 polygonBoxCollides :: Path -> (Point, Point) -> Bool
 polygonBoxCollides xs (lb, rt) = or
   [ not (segClearsBox p1 p2 lb rt)
@@ -166,7 +166,6 @@ absoluteValue n | n >= 0 = n
 
 
 -- | Обновить состояние игрока.
--- Игрок не может прыгнуть выше потолка.
 updatePlayer :: Bool -> Float -> Player -> Player
 updatePlayer True dt player 
   | wasOnPlatform player = player
