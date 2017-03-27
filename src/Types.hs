@@ -1,6 +1,4 @@
 module Types where
-import Graphics.Gloss.Data.Vector
-import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Interface.Pure.Game
 
 -- | Ширина 
@@ -18,20 +16,21 @@ type Platform   = (Width, Offset)
 -- | Счёт.
 type Score = Int
 
--- | Игрок
+-- | Игрок — символ лямбда.
 data Player = Player
   { playerWidth :: Width
   , playerHeight :: Height  -- ^ Положение игрока по вертикали.
   , playerSpeed :: Float
   , isOnPlatformNow :: Bool
+  , isNearPlatformNow :: Bool
   , playerFallingSpeed  :: Float   -- ^ Скорость падения игрока.
   }
 
 -- | Модель игровой вселенной.
 data Universe = Universe
-  { universePlatforms   :: [Platform]   -- ^ Платформы игровой вселенной.
-  , universePlayer  :: Player   -- ^ Игрок
-  , universeScore   :: Score    -- ^ Счёт (количество пролетевших мимо платформ)
+  { universePlatforms   :: [Platform]   -- ^ Ворота игровой вселенной.
+  , universePlayer  :: Player   -- ^ Игрок.
+  , universeScore   :: Score    -- ^ Счёт (кол-во успешно пройденных ворот).
   , universeBorders :: Int
   , universeBackground :: Int
   }
@@ -58,33 +57,33 @@ screenRight = fromIntegral screenWidth / 2
 screenLeft :: Offset
 screenLeft = - fromIntegral screenWidth / 2
 
--- | Положение верхнего края экрана
 screenUp :: Offset
 screenUp =  fromIntegral screenHeight / 2
 
--- | Положение нижнего края экрана
 screenDown :: Offset
 screenDown = - fromIntegral screenHeight / 2
 
--- | Ширина платформы
+-- | Ширина стенок ворот.
 platformWidth :: Float
 platformWidth = 120
 
--- | Высота платформы
 platformHeight :: Float
 platformHeight = 20
 
--- | Расстояние между платформами
+-- | Размер проёма ворот.
+platformSize :: Float
+platformSize = 150
+
+-- | Расстояние между воротами.
 defaultOffset :: Offset
 defaultOffset = 200
 
--- | Диапазон генерации платформ
+-- | Диапазон высот ворот.
 platformWidthRange :: (Width, Width)
 platformWidthRange = (-w, w)
   where
     w = (fromIntegral screenWidth - platformWidth) / 2
 
--- | Параметры платформы
 platformBoxes :: Platform -> [(Point, Point)]
 platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
   where

@@ -1,7 +1,6 @@
 module Deadline where
 
 import System.Random
-import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Interface.Pure.Game
 import Graphics.Gloss.Interface.Pure.Simulate
@@ -10,7 +9,6 @@ import Types
 import Narek
 import John
 import Anny
-import Kate
 
 -- | Запустить игру «Deadline».
 runDeadline :: Images -> IO ()
@@ -56,12 +54,12 @@ initPlayer = Player
   , playerFallingSpeed  = 0
   }
 
--- | Инициализировать одну платформу
+-- | Инициализировать одни ворота.
 initPlatform :: Width -> Platform
 initPlatform h = (h, defaultOffset)
 
 -- | Инициализировать случайный бесконечный
--- список платформ для игровой вселенной
+-- список ворот для игровой вселенной.
 initPlatforms :: StdGen -> [Platform]
 initPlatforms g = map initPlatform
   (randomRs platformWidthRange g)
@@ -80,7 +78,7 @@ drawUniverse images u = pictures
   , drawScore  (universeScore u)
   ]
 
--- | Нарисовать счёт в левом верхнем углу экрана
+-- | Нарисовать счёт в левом верхнем углу экрана.
 drawScore :: Score -> Picture
 drawScore score = translate (-w) h (scale 30 30 (pictures
   [ color red (polygon [ (0, 0), (0, -2), (3, -2), (3, 0) ])            -- красный квадрат
@@ -90,30 +88,34 @@ drawScore score = translate (-w) h (scale 30 30 (pictures
     w = fromIntegral screenWidth  / 2
     h = fromIntegral screenHeight / 2
 
-
 -- | Обновить состояние игровой вселенной.
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
+  | isGameOver u = resetUniverse u
   | isOnPlatform u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
-      , universePlayer = updatePlayer True dt (universePlayer u)
-      , universeScore  = universeScore u + scorePlatforms (universePlatforms u)
+      , universePlayer = updatePlayer True False dt (universePlayer u)
+      , universeScore  = (universeScore u) 
+      }
+  | isNearPlatform u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
+      , universePlayer = updatePlayer False True dt (universePlayer u)
+      , universeScore  = universeScore u
       }
   | otherwise = u
       { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
-      , universePlayer = updatePlayer False dt (universePlayer u)
-      , universeScore  = universeScore u + scorePlatforms (universePlatforms u)
+      , universePlayer = updatePlayer False False dt (universePlayer u)
+      , universeScore  = (universeScore u)
       }
-  where
-    scorePlatforms = length . takeWhile isPast . dropWhile wasPast . absolutePlatforms
+
+scorePlatforms :: Float -> Universe -> Score
+scorePlatforms dt u =  length (takeWhile isPast (dropWhile wasPast (absolutePlatforms (universePlatforms u))))
+  where 
     -- платформы окажутся внизу игрока в этом кадре?
-    isPast (offset, _) = offset + platformWidth / 2 - dt * speed < 0
+    isPast (_, offset) = (playerHeight (universePlayer u)) < (offset - dt * speed) 
     -- ворота уже были внизу игрока в предыдущем кадре?
-    wasPast (offset, _) = offset + platformWidth / 2 < 0
+    wasPast (_, offset) = (playerHeight (universePlayer u)) < offset 
 
 
-
-
--- | Сбросить игру (начать с начала со случайными платформами).
+-- | Сбросить игру (начать с начала со случайными воротами).
 resetUniverse :: Universe -> Universe
 resetUniverse u = u
   { universePlatforms  = tail (universePlatforms u)
@@ -121,78 +123,125 @@ resetUniverse u = u
   , universeScore  = 0
   }
 
--- | Конец игры?
 isOnPlatform :: Universe -> Bool
 isOnPlatform u = playerBelowFloor || playerHitsPlatform
   where
     playerHitsPlatform   = collision (universePlayer u) (universePlatforms u)
     playerBelowFloor = playerHeight (universePlayer u) < - fromIntegral screenHeight
 
--- | Конец игры?
+    -- | Конец игры?
 wasOnPlatform :: Player -> Bool
 wasOnPlatform player = (isOnPlatformNow player)
+
+-- |
+isNearPlatform :: Universe -> Bool
+isNearPlatform u = playerHitsPlatform
+  where
+    playerHitsPlatform = collisionNear (universePlayer u) (universePlatforms u)
+
+-- | 
+wasNearPlatform :: Player -> Bool
+wasNearPlatform player = (isNearPlatformNow player)
   
 -- | Конец игры?
 isGameOver :: Universe -> Bool
-isGameOver u = playerBelowFloor || playerHitsPlatform
+isGameOver u = playerBelowFloor || playerBelowRoof
   where
-    playerHitsPlatform   = collision (universePlayer u) (universePlatforms u)
-    playerBelowFloor = playerHeight (universePlayer u) < - fromIntegral screenHeight
+    playerBelowRoof = playerHeight (universePlayer u) >  screenUp - 30
+    playerBelowFloor = playerHeight (universePlayer u) < screenDown + 30
 
 -- | Сталкивается ли игрок с любыми из
--- бесконечного списка платформ?
+-- бесконечного списка ворот?
 collision :: Player -> [Platform] -> Bool
 collision _ [] = False
 collision player platforms = or (map (collides player) (takeWhile onScreen (absolutePlatforms platforms)))
   where
-    onScreen (_, offset) = offset - platformHeight< screenUp
+    onScreen (_, offset) = offset - platformHeight > screenDown
+
+-- | Сталкивается ли игрок с любыми из
+-- бесконечного списка платформ?
+collisionNear :: Player -> [Platform] -> Bool
+collisionNear _ [] = False
+collisionNear player platforms = or (map (collidesNear player) (takeWhile onScreen (absolutePlatforms platforms)))
+  where
+    onScreen (_, offset) = offset - platformHeight > screenDown
 
 -- | Сталкивается ли игрок с платформами?
-collides :: Player -> Platform -> Bool
-collides player platform = or
+collidesNear :: Player -> Platform -> Bool
+collidesNear player platform = or
   [ polygonBoxCollides polygon box
   | polygon <- playerPolygons player
   , box     <- platformBoxes platform ]
 
--- | Упрощённая проверка на пересечение многоугольников
+-- |  Становится ли игрок на платформу?
+collides :: Player -> Platform -> Bool
+collides player platform = and [((playerHeight player - 1200 * 0.03)< (snd platform + platformHeight)), ((playerHeight player - 1200 * 0.03)> (snd platform)), ((playerWidth player - 800*0.03) < (fst platform + platformWidth /2)), ((playerWidth player + 800*0.03) > (fst platform - platformWidth /2))]
+
+
+-- | Упрощённая проверка на пересечение многоугольников.
 polygonBoxCollides :: Path -> (Point, Point) -> Bool
 polygonBoxCollides xs (lb, rt) = or
   [ not (segClearsBox p1 p2 lb rt)
-  | (p1, p2) <- zip xs (tail (cycle xs)) ]
+  | (p1, p2) <- zip xs (tail (cycle xs))  ]
 
 absoluteValue :: Float -> Float
 absoluteValue n | n >= 0 = n
                 | otherwise  = -n
-
-
 -- | Обновить состояние игрока.
-updatePlayer :: Bool -> Float -> Player -> Player
-updatePlayer True dt player 
+-- Игрок не может прыгнуть выше потолка.
+ -- | Обновить состояние игрока.
+updatePlayer :: Bool -> Bool -> Float -> Player -> Player
+updatePlayer True _ dt player 
   | wasOnPlatform player = player
   { playerHeight = playerHeight player + dt * speed
   , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
   , playerFallingSpeed  = 0
   , playerSpeed = playerSpeed player
   , isOnPlatformNow = True
+  , isNearPlatformNow = False
   }
   | otherwise = player
   { playerHeight = playerHeight player + dt * speed
   , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
   , playerFallingSpeed  = 0
-  , playerSpeed = 0
+  , playerSpeed = playerSpeed player
   , isOnPlatformNow = True
+  , isNearPlatformNow = False
   }
    where
     h = fromIntegral screenHeight / 2
     w = 200
     wm = -200
 
-updatePlayer False dt player = player
+updatePlayer _ True dt player
+  | and [wasNearPlatform player, not (wasOnPlatform player)] = player
+  { playerHeight = playerHeight player + dt * playerFallingSpeed player
+  , playerWidth = max (min w (playerWidth player)) wm
+  , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
+  , playerSpeed = 0
+  , isOnPlatformNow = False
+  , isNearPlatformNow = True
+  }
+  | otherwise = player
+  { playerHeight = playerHeight player + dt * playerFallingSpeed player
+  , playerWidth = max (min w (playerWidth player)) wm
+  , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
+  , playerSpeed = 0
+  , isOnPlatformNow = False
+  , isNearPlatformNow = True
+  }
+   where
+    h = fromIntegral screenHeight / 2
+    w = 200
+    wm = -200
+
+updatePlayer False False dt player = player
   { playerHeight = playerHeight player + dt * playerFallingSpeed player
   , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
   , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
   , playerSpeed = playerSpeed player
   , isOnPlatformNow = False
+  , isNearPlatformNow = False
   }
   where
     h = fromIntegral screenHeight / 2
