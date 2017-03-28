@@ -161,17 +161,17 @@ polygonBoxCollides xs (lb, rt) = or
   [ not (segClearsBox p1 p2 lb rt)
   | (p1, p2) <- zip xs (tail (cycle xs))  ]
 
-absoluteValue :: Float -> Float
-absoluteValue n | n >= 0 = n
-                | otherwise  = -n
 -- | Обновить состояние игрока.
 -- Игрок не может прыгнуть выше потолка.
  -- | Обновить состояние игрока.
 
-keepPlayerOnScreen :: Player -> Player 
-keepPlayerOnScreen player = player {
-  playerSpeed = (playerSpeed player)
-}
+keepPlayerOnScreen :: Float -> Player -> Player 
+keepPlayerOnScreen dt player = player {
+  playerWidth = (max (min w (playerWidth player) + dt * (playerSpeed player)) wm)
+} 
+  where
+    w = 200
+    wm = -200 
 
 keepPlayerOnPlatform :: Player -> Player
 keepPlayerOnPlatform player = player {
@@ -180,25 +180,20 @@ keepPlayerOnPlatform player = player {
 }
 
 setGravity :: Float -> Player -> Player
-setGravity dt player 
-  | ((playerFallingSpeed player) == speed) = player {playerFallingSpeed = (playerFallingSpeed player)}
-  | otherwise = player {playerFallingSpeed = (playerFallingSpeed player) + dt * gravity}
+setGravity dt player  = player {playerFallingSpeed = (playerFallingSpeed player) + dt * gravity}
+  
 
 movePlayerHelper :: Float -> Player -> Player
 movePlayerHelper dt player = player {
   playerFallingSpeed = (playerFallingSpeed player),
-  playerHeight = (playerHeight player) + dt * (playerFallingSpeed player),
-  playerWidth = (max (min w (playerWidth player) + dt * (playerSpeed player)) wm)
+  playerHeight = (playerHeight player) + dt * (playerFallingSpeed player)
   }
-  where
-    w = 200
-    wm = -200 
 
 movePlayer :: Float -> Player -> Player
 movePlayer dt player = (setGravity dt (movePlayerHelper dt player))
 
 updatePlayer :: Float -> Player -> Player
-updatePlayer dt player = (keepPlayerOnScreen (movePlayer dt player))
+updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
 
 --updatePlayer :: Height -> Width -> Float -> Float -> Player -> Player
 --updatePlayer h w fs s player = player
