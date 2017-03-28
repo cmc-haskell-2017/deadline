@@ -92,28 +92,15 @@ drawScore score = translate (-w) h (scale 30 30 (pictures
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
   | isGameOver u = resetUniverse u
-  | isOnPlatform u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
-      , universePlayer = updatePlayer True False dt (universePlayer u)
+  | isOnPlatform u = upUniverse dt u updatePlayerOnPlatform
+  | isNearPlatform u = upUniverse dt u updatePlayerNearPlatform
+  | otherwise = upUniverse dt u updatePlayer
+
+upUniverse:: Float -> Universe -> (Float -> Player -> Player) -> Universe 
+upUniverse dt u f  = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
+      , universePlayer = f dt (universePlayer u)
       , universeScore  = (universeScore u) +dt
       }
-  | isNearPlatform u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
-      , universePlayer = updatePlayer False True dt (universePlayer u)
-      , universeScore  = (universeScore u)+dt
-      }
-  | otherwise = u
-      { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
-      , universePlayer = updatePlayer False False dt (universePlayer u)
-      , universeScore  = (universeScore u)+dt
-      }
-
---scorePlatforms :: Float -> Universe -> Score
---scorePlatforms dt u =  length (takeWhile isPast (dropWhile ------wasPast (absolutePlatforms (universePlatforms u))))
---  where 
-    -- платформы окажутся внизу игрока в этом кадре?
-  --  isPast (_, offset) = (playerHeight (universePlayer u)) < (offset - dt * speed) 
-    -- ворота уже были внизу игрока в предыдущем кадре?
-    --wasPast (_, offset) = (playerHeight (universePlayer u)) < offset 
-
 
 -- | Сбросить игру (начать с начала со случайными воротами).
 resetUniverse :: Universe -> Universe
@@ -129,19 +116,11 @@ isOnPlatform u = playerBelowFloor || playerHitsPlatform
     playerHitsPlatform   = collision (universePlayer u) (universePlatforms u)
     playerBelowFloor = playerHeight (universePlayer u) < - fromIntegral screenHeight
 
-    -- | Конец игры?
-wasOnPlatform :: Player -> Bool
-wasOnPlatform player = (isOnPlatformNow player)
-
 -- |
 isNearPlatform :: Universe -> Bool
 isNearPlatform u = playerHitsPlatform
   where
     playerHitsPlatform = collisionNear (universePlayer u) (universePlatforms u)
-
--- | 
-wasNearPlatform :: Player -> Bool
-wasNearPlatform player = (isNearPlatformNow player)
   
 -- | Конец игры?
 isGameOver :: Universe -> Bool
@@ -190,17 +169,8 @@ absoluteValue n | n >= 0 = n
 -- | Обновить состояние игрока.
 -- Игрок не может прыгнуть выше потолка.
  -- | Обновить состояние игрока.
-updatePlayer :: Bool -> Bool -> Float -> Player -> Player
-updatePlayer True _ dt player 
-  | wasOnPlatform player = player
-  { playerHeight = playerHeight player + dt * speed
-  , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
-  , playerFallingSpeed  = 0
-  , playerSpeed = playerSpeed player
-  , isOnPlatformNow = True
-  , isNearPlatformNow = False
-  }
-  | otherwise = player
+updatePlayerOnPlatform :: Float -> Player -> Player
+updatePlayerOnPlatform dt player = player
   { playerHeight = playerHeight player + dt * speed
   , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
   , playerFallingSpeed  = 0
@@ -213,16 +183,8 @@ updatePlayer True _ dt player
     w = 200
     wm = -200
 
-updatePlayer _ True dt player
-  | and [wasNearPlatform player, not (wasOnPlatform player)] = player
-  { playerHeight = playerHeight player + dt * playerFallingSpeed player
-  , playerWidth = max (min w (playerWidth player)) wm
-  , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
-  , playerSpeed = 0
-  , isOnPlatformNow = False
-  , isNearPlatformNow = True
-  }
-  | otherwise = player
+updatePlayerNearPlatform :: Float -> Player -> Player
+updatePlayerNearPlatform dt player = player
   { playerHeight = playerHeight player + dt * playerFallingSpeed player
   , playerWidth = max (min w (playerWidth player)) wm
   , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
@@ -235,7 +197,8 @@ updatePlayer _ True dt player
     w = 200
     wm = -200
 
-updatePlayer False False dt player = player
+updatePlayer :: Float -> Player -> Player
+updatePlayer dt player = player
   { playerHeight = playerHeight player + dt * playerFallingSpeed player
   , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
   , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
