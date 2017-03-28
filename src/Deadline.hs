@@ -91,11 +91,15 @@ drawScore score = translate (-w) h (scale 30 30 (pictures
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
   | isGameOver u = resetUniverse u 
-  | isOnPlatform u = upUniverse dt u (playerHeight player + dt * speed) (max (min w (playerWidth player + dt * playerSpeed player)) wm) 0 (playerSpeed player)
-  | isNearPlatform u = upUniverse dt u (playerHeight player + dt * playerFallingSpeed player) (max (min w (playerWidth player)) wm) (playerFallingSpeed player + dt * gravity) 0
-  | otherwise = upUniverse dt u (playerHeight player + dt * playerFallingSpeed player) (max (min w (playerWidth player + dt * playerSpeed player)) wm) (playerFallingSpeed player + dt * gravity) (playerSpeed player)
+  | isOnPlatform u = upUniverse dt u (pHeight + dt * speed) (max (min w (pWidth + dt * pSpeed)) wm) 0 pSpeed
+  | isNearPlatform u = upUniverse dt u (pHeight + dt * pFalling) (max (min w (pWidth)) wm) (pFalling + dt * gravity) 0
+  | otherwise = upUniverse dt u (pHeight + dt * pFalling) (max (min w (pWidth + dt * pSpeed)) wm) (pFalling + dt * gravity) pSpeed
   where
     player = (universePlayer u)
+    pHeight = playerHeight (universePlayer u)
+    pWidth = playerWidth (universePlayer u)
+    pSpeed = playerSpeed (universePlayer u)
+    pFalling = playerFallingSpeed (universePlayer u)
     w = 200
     wm = -200 
  
