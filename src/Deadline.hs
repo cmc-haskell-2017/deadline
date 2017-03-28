@@ -91,8 +91,8 @@ drawScore score = translate (-w) h (scale 30 30 (pictures
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
   | isGameOver u = resetUniverse u 
-  | isOnPlatform u = (upUniverse dt u) {universePlayer = keepPlayerOnPlatform (universePlayer u)}
-  | isNearPlatform u = (upUniverse dt u) --пока ничего
+  | isOnPlatform u = (upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)}
+  | isNearPlatform u = (upUniverse dt u) {universePlayer = updatePlayer dt (keepPlayerNearPlatform (universePlayer u))}
   | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)}
  
 upUniverse:: Float -> Universe -> Universe 
@@ -165,6 +165,10 @@ polygonBoxCollides xs (lb, rt) = or
 -- Игрок не может прыгнуть выше потолка.
  -- | Обновить состояние игрока.
 
+keepPlayerNearPlatform :: Player -> Player
+keepPlayerNearPlatform player = player {
+  playerSpeed = 0}
+
 keepPlayerOnScreen :: Float -> Player -> Player 
 keepPlayerOnScreen dt player = player {
   playerWidth = (max (min w (playerWidth player) + dt * (playerSpeed player)) wm)
@@ -173,11 +177,15 @@ keepPlayerOnScreen dt player = player {
     w = 200
     wm = -200 
 
-keepPlayerOnPlatform :: Player -> Player
-keepPlayerOnPlatform player = player {
-   playerFallingSpeed = speed,
+keepPlayerOnPlatform :: Float -> Player -> Player
+keepPlayerOnPlatform dt player = player {
+   playerHeight = playerHeight player + dt * speed,
+   playerFallingSpeed = 0,
    playerSpeed = (playerSpeed player)
 }
+
+keepPlayer :: Float -> Player-> Player
+keepPlayer dt player = keepPlayerOnPlatform dt (keepPlayerOnScreen dt player)
 
 setGravity :: Float -> Player -> Player
 setGravity dt player  = player {playerFallingSpeed = (playerFallingSpeed player) + dt * gravity}
@@ -185,8 +193,9 @@ setGravity dt player  = player {playerFallingSpeed = (playerFallingSpeed player)
 
 movePlayerHelper :: Float -> Player -> Player
 movePlayerHelper dt player = player {
-  playerFallingSpeed = (playerFallingSpeed player),
-  playerHeight = (playerHeight player) + dt * (playerFallingSpeed player)
+  playerFallingSpeed = (playerFallingSpeed player)  ,
+  playerHeight = (playerHeight player) + dt * (playerFallingSpeed player),
+  playerSpeed = playerSpeed player
   }
 
 movePlayer :: Float -> Player -> Player
