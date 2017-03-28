@@ -24,8 +24,6 @@ data Player = Player
   { playerWidth :: Width
   , playerHeight :: Height  -- ^ Положение игрока по вертикали.
   , playerSpeed :: Float
-  , isOnPlatformNow :: Bool
-  , isNearPlatformNow :: Bool
   , playerFallingSpeed  :: Float   -- ^ Скорость падения игрока.
   }
 

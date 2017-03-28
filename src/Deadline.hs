@@ -49,7 +49,6 @@ initPlayer :: Player
 initPlayer = Player
   { playerHeight = 300
   , playerWidth = 0
-  , isOnPlatformNow = False
   , playerSpeed = 0
   , playerFallingSpeed  = 0
   }
@@ -91,14 +90,18 @@ drawScore score = translate (-w) h (scale 30 30 (pictures
 -- | Обновить состояние игровой вселенной.
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
-  | isGameOver u = resetUniverse u
-  | isOnPlatform u = upUniverse dt u updatePlayerOnPlatform
-  | isNearPlatform u = upUniverse dt u updatePlayerNearPlatform
-  | otherwise = upUniverse dt u updatePlayer
-
-upUniverse:: Float -> Universe -> (Float -> Player -> Player) -> Universe 
-upUniverse dt u f  = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
-      , universePlayer = f dt (universePlayer u)
+  | isGameOver u = resetUniverse u 
+  | isOnPlatform u = upUniverse dt u (playerHeight player + dt * speed) (max (min w (playerWidth player + dt * playerSpeed player)) wm) 0 (playerSpeed player)
+  | isNearPlatform u = upUniverse dt u (playerHeight player + dt * playerFallingSpeed player) (max (min w (playerWidth player)) wm) (playerFallingSpeed player + dt * gravity) 0
+  | otherwise = upUniverse dt u (playerHeight player + dt * playerFallingSpeed player) (max (min w (playerWidth player + dt * playerSpeed player)) wm) (playerFallingSpeed player + dt * gravity) (playerSpeed player)
+  where
+    player = (universePlayer u)
+    w = 200
+    wm = -200 
+ 
+upUniverse:: Float -> Universe -> Height -> Width -> Float -> Float -> Universe 
+upUniverse dt u h w fs s  = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
+      , universePlayer = updatePlayer h w fs s (universePlayer u)
       , universeScore  = (universeScore u) +dt
       }
 
@@ -169,47 +172,15 @@ absoluteValue n | n >= 0 = n
 -- | Обновить состояние игрока.
 -- Игрок не может прыгнуть выше потолка.
  -- | Обновить состояние игрока.
-updatePlayerOnPlatform :: Float -> Player -> Player
-updatePlayerOnPlatform dt player = player
-  { playerHeight = playerHeight player + dt * speed
-  , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
-  , playerFallingSpeed  = 0
-  , playerSpeed = playerSpeed player
-  , isOnPlatformNow = True
-  , isNearPlatformNow = False
-  }
-   where
-    h = fromIntegral screenHeight / 2
-    w = 200
-    wm = -200
 
-updatePlayerNearPlatform :: Float -> Player -> Player
-updatePlayerNearPlatform dt player = player
-  { playerHeight = playerHeight player + dt * playerFallingSpeed player
-  , playerWidth = max (min w (playerWidth player)) wm
-  , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
-  , playerSpeed = 0
-  , isOnPlatformNow = False
-  , isNearPlatformNow = True
+updatePlayer :: Height -> Width -> Float -> Float -> Player -> Player
+updatePlayer h w fs s player = player
+  { playerHeight = h
+  , playerWidth = w
+  , playerFallingSpeed  = fs
+  , playerSpeed = s
   }
-   where
-    h = fromIntegral screenHeight / 2
-    w = 200
-    wm = -200
-
-updatePlayer :: Float -> Player -> Player
-updatePlayer dt player = player
-  { playerHeight = playerHeight player + dt * playerFallingSpeed player
-  , playerWidth = max (min w (playerWidth player + dt * playerSpeed player)) wm
-  , playerFallingSpeed  = playerFallingSpeed player + dt * gravity
-  , playerSpeed = playerSpeed player
-  , isOnPlatformNow = False
-  , isNearPlatformNow = False
-  }
-  where
-    h = fromIntegral screenHeight / 2
-    w = 200
-    wm = -200
+  
 -- =========================================
 -- Константы, параметры игры
 -- =========================================
