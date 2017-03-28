@@ -79,10 +79,10 @@ drawUniverse images u = pictures
   ]
 
 -- | Нарисовать счёт в левом верхнем углу экрана.
-drawScore :: Score -> Picture
+drawScore :: Float -> Picture
 drawScore score = translate (-w) h (scale 30 30 (pictures
   [ color red (polygon [ (0, 0), (0, -2), (3, -2), (3, 0) ])            -- красный квадрат
-  , translate 1 (-1.5) (scale 0.01 0.01 (color black (text (show score))))  -- черный счёт
+  , translate 1 (-1.5) (scale 0.01 0.01 (color black (text (show  (truncate score)))))  -- черный счёт
   ]))
   where
     w = fromIntegral screenWidth  / 2
@@ -94,25 +94,25 @@ updateUniverse dt u
   | isGameOver u = resetUniverse u
   | isOnPlatform u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
       , universePlayer = updatePlayer True False dt (universePlayer u)
-      , universeScore  = (universeScore u) 
+      , universeScore  = (universeScore u) +dt
       }
   | isNearPlatform u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
       , universePlayer = updatePlayer False True dt (universePlayer u)
-      , universeScore  = universeScore u
+      , universeScore  = (universeScore u)+dt
       }
   | otherwise = u
       { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
       , universePlayer = updatePlayer False False dt (universePlayer u)
-      , universeScore  = (universeScore u)
+      , universeScore  = (universeScore u)+dt
       }
 
-scorePlatforms :: Float -> Universe -> Score
-scorePlatforms dt u =  length (takeWhile isPast (dropWhile wasPast (absolutePlatforms (universePlatforms u))))
-  where 
+--scorePlatforms :: Float -> Universe -> Score
+--scorePlatforms dt u =  length (takeWhile isPast (dropWhile ------wasPast (absolutePlatforms (universePlatforms u))))
+--  where 
     -- платформы окажутся внизу игрока в этом кадре?
-    isPast (_, offset) = (playerHeight (universePlayer u)) < (offset - dt * speed) 
+  --  isPast (_, offset) = (playerHeight (universePlayer u)) < (offset - dt * speed) 
     -- ворота уже были внизу игрока в предыдущем кадре?
-    wasPast (_, offset) = (playerHeight (universePlayer u)) < offset 
+    --wasPast (_, offset) = (playerHeight (universePlayer u)) < offset 
 
 
 -- | Сбросить игру (начать с начала со случайными воротами).
