@@ -152,7 +152,13 @@ collidesNear player platform = or
 
 -- |  Становится ли игрок на платформу?
 collides :: Player -> Platform -> Bool
-collides player platform = and [((playerHeight player - 1200 * 0.03)< (snd platform + platformHeight)), ((playerHeight player - 1200 * 0.03)> (snd platform)), ((playerWidth player - 800*0.03) < (fst platform + platformWidth /2)), ((playerWidth player + 800*0.03) > (fst platform - platformWidth /2))]
+collides player platform = and [
+  ((playerHeight player - heigthOfPlayer) < (snd platform + platformHeight)), 
+  ((playerHeight player - heigthOfPlayer) > (snd platform)), 
+  ((playerWidth player - widthOfPlayer) < (fst platform + platformWidth /2)), 
+  ((playerWidth player + widthOfPlayer) > (fst platform - platformWidth /2))]
+   where heigthOfPlayer = 1200*0.03
+         widthOfPlayer = 800*0.03
 
 
 -- | Упрощённая проверка на пересечение многоугольников.
@@ -190,7 +196,7 @@ movePlayer :: Float -> Player -> Player
 movePlayer dt player = player {
   playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
   playerHeight = (playerHeight player) + dt * (playerFallingSpeed player)
-  }
+}
 
 updatePlayer :: Float -> Player -> Player
 updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
