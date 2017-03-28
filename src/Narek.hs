@@ -24,6 +24,9 @@ drawPlayer image player =translate x y (scale 0.1 0.1 image)
 drawBackground :: Picture -> Picture
 drawBackground image = (scale 0.12 0.12 image)
 
+drawGameOver :: Picture -> Picture
+drawGameOver image = (scale 0.32 0.32 image)
+
 -- | Нарисовать границы сверху и снизу.
 drawBorders :: Picture
 drawBorders = translate (-w) h (scale 30 30 (pictures

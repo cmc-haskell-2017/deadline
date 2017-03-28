@@ -40,6 +40,7 @@ data Universe = Universe
 data Images = Images
   { imagePers  :: Picture   -- ^ Изображение персонажа.
   , imageBackground  :: Picture
+  , imageGameOver :: Picture
   }
 
 -- | Ширина экрана.

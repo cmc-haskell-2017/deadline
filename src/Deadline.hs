@@ -25,9 +25,11 @@ loadImages :: IO Images
 loadImages = do
   Just pers   <- loadJuicyPNG "src/pers.png"
   Just bgrd   <- loadJuicyPNG "src/background.png"
+  Just gover  <- loadJuicyPNG "src/gameover.png"
   return Images
     { imagePers   = scale 3 3 pers
     , imageBackground = scale 3 3 bgrd 
+    , imageGameOver = scale 3 3 gover
     }
 
 -- =========================================
@@ -75,6 +77,7 @@ drawUniverse images u = pictures
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
   , drawBorders
   , drawScore  (universeScore u)
+  -- , drawGameOver (imageGameOver images)
   ]
 
 -- | Нарисовать счёт в левом верхнем углу экрана.
