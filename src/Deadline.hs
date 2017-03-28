@@ -180,26 +180,17 @@ keepPlayerOnScreen dt player = player {
 keepPlayerOnPlatform :: Float -> Player -> Player
 keepPlayerOnPlatform dt player = player {
    playerHeight = playerHeight player + dt * speed,
-   playerFallingSpeed = 0,
-   playerSpeed = (playerSpeed player)
+   playerFallingSpeed = 0
 }
 
 keepPlayer :: Float -> Player-> Player
-keepPlayer dt player = keepPlayerOnPlatform dt (keepPlayerOnScreen dt player)
-
-setGravity :: Float -> Player -> Player
-setGravity dt player  = player {playerFallingSpeed = (playerFallingSpeed player) + dt * gravity}
-  
-
-movePlayerHelper :: Float -> Player -> Player
-movePlayerHelper dt player = player {
-  playerFallingSpeed = (playerFallingSpeed player)  ,
-  playerHeight = (playerHeight player) + dt * (playerFallingSpeed player),
-  playerSpeed = playerSpeed player
-  }
+keepPlayer dt player = keepPlayerOnScreen dt (keepPlayerOnPlatform dt player)
 
 movePlayer :: Float -> Player -> Player
-movePlayer dt player = (setGravity dt (movePlayerHelper dt player))
+movePlayer dt player = player {
+  playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
+  playerHeight = (playerHeight player) + dt * (playerFallingSpeed player)
+  }
 
 updatePlayer :: Float -> Player -> Player
 updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
