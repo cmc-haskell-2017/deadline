@@ -91,22 +91,13 @@ drawScore score = translate (-w) h (scale 30 30 (pictures
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
   | isGameOver u = resetUniverse u 
-  | isOnPlatform u = upUniverse dt u (pHeight + dt * speed) (max (min w (pWidth + dt * pSpeed)) wm) 0 pSpeed
-  | isNearPlatform u = upUniverse dt u (pHeight + dt * pFalling) (max (min w (pWidth)) wm) (pFalling + dt * gravity) 0
-  | otherwise = upUniverse dt u (pHeight + dt * pFalling) (max (min w (pWidth + dt * pSpeed)) wm) (pFalling + dt * gravity) pSpeed
-  where
-    player = (universePlayer u)
-    pHeight = playerHeight (universePlayer u)
-    pWidth = playerWidth (universePlayer u)
-    pSpeed = playerSpeed (universePlayer u)
-    pFalling = playerFallingSpeed (universePlayer u)
-    w = 200
-    wm = -200 
+  | isOnPlatform u = (upUniverse dt u) {universePlayer = keepPlayerOnPlatform (universePlayer u)}
+  | isNearPlatform u = (upUniverse dt u) --пока ничего
+  | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)}
  
-upUniverse:: Float -> Universe -> Height -> Width -> Float -> Float -> Universe 
-upUniverse dt u h w fs s  = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
-      , universePlayer = updatePlayer h w fs s (universePlayer u)
-      , universeScore  = (universeScore u) +dt
+upUniverse:: Float -> Universe -> Universe 
+upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
+      , universeScore  = (universeScore u) + dt
       }
 
 -- | Сбросить игру (начать с начала со случайными воротами).
@@ -177,14 +168,42 @@ absoluteValue n | n >= 0 = n
 -- Игрок не может прыгнуть выше потолка.
  -- | Обновить состояние игрока.
 
-updatePlayer :: Height -> Width -> Float -> Float -> Player -> Player
-updatePlayer h w fs s player = player
-  { playerHeight = h
-  , playerWidth = w
-  , playerFallingSpeed  = fs
-  , playerSpeed = s
+keepPlayerOnScreen :: Player -> Player 
+keepPlayerOnScreen player = player {
+  playerSpeed = (playerSpeed player)
+}
+
+keepPlayerOnPlatform :: Player -> Player
+keepPlayerOnPlatform player = player {
+   playerFallingSpeed = speed,
+   playerSpeed = (playerSpeed player)
+}
+
+setGravity :: Float -> Player -> Player
+setGravity dt player 
+  | ((playerFallingSpeed player) == speed) = player {playerFallingSpeed = (playerFallingSpeed player)}
+  | otherwise = player {playerFallingSpeed = (playerFallingSpeed player) + dt * gravity}
+
+movePlayerHelper :: Float -> Player -> Player
+movePlayerHelper dt player = player {
+  playerFallingSpeed = (playerFallingSpeed player),
+  playerHeight = (playerHeight player) + dt * (playerFallingSpeed player),
+  playerWidth = (max (min w (playerWidth player) + dt * (playerSpeed player)) wm)
   }
-  
--- =========================================
--- Константы, параметры игры
--- =========================================
+  where
+    w = 200
+    wm = -200 
+
+movePlayer :: Float -> Player -> Player
+movePlayer dt player = (setGravity dt (movePlayerHelper dt player))
+
+updatePlayer :: Float -> Player -> Player
+updatePlayer dt player = (keepPlayerOnScreen (movePlayer dt player))
+
+--updatePlayer :: Height -> Width -> Float -> Float -> Player -> Player
+--updatePlayer h w fs s player = player
+--  { playerHeight = h
+--  , playerWidth = w
+--  , playerFallingSpeed  = fs
+--  , playerSpeed = s
+--  }
