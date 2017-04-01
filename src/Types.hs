@@ -27,6 +27,7 @@ data Player = Player
   , playerFallingSpeed  :: Float   -- ^ Скорость падения игрока.
   }
 
+
 -- | Модель игровой вселенной.
 data Universe = Universe
   { universePlatforms   :: [Platform]   -- ^ Платформы игровой вселенной.
@@ -34,6 +35,7 @@ data Universe = Universe
   , universeScore   :: Float    -- ^ Счёт (количество пролетевших мимо платформ)
   , universeBorders :: Int
   , universeBackground :: Int
+  , universeGameOver :: Maybe Point
   }
 
 -- | Изображения объектов.

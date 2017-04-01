@@ -14,7 +14,7 @@ import Anny
 runDeadline :: Images -> IO ()
 runDeadline images = do
   g <- newStdGen
-  play display bgColor fps (initUniverse g) (drawUniverse images) handleUniverse updateUniverse
+  play display bgColor fps (initUniverse g) (drawUniverse images) (handleUniverse g) updateUniverse
   where
     display = InWindow "DEADLINE" (screenWidth, screenHeight) (200, 200)
     bgColor = white   -- цвет фона
@@ -44,6 +44,7 @@ initUniverse g = Universe
   , universeScore  = 0
   , universeBorders = 0
   , universeBackground = 0
+  , universeGameOver = Nothing
   }
 
 -- | Начальное состояние игрока.
@@ -65,6 +66,9 @@ initPlatforms :: StdGen -> [Platform]
 initPlatforms g = map initPlatform
   (randomRs platformWidthRange g)
 
+initGameOver :: Point
+initGameOver = (0.32, 0.32)
+
 -- =========================================
 -- Отрисовка игровой вселенной
 -- =========================================
@@ -77,8 +81,12 @@ drawUniverse images u = pictures
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
   , drawBorders
   , drawScore  (universeScore u)
-  -- , drawGameOver (imageGameOver images)
+  , drawGameOver (imageGameOver images) (universeGameOver u)
   ]
+
+drawGameOver :: Picture -> Maybe Point -> Picture
+drawGameOver _ Nothing = blank
+drawGameOver image (Just (x, y)) = (scale x y image)
 
 -- | Нарисовать счёт в левом верхнем углу экрана.
 drawScore :: Float -> Picture
@@ -93,7 +101,7 @@ drawScore score = translate (-w) h (scale 30 30 (pictures
 -- | Обновить состояние игровой вселенной.
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
-  | isGameOver u = resetUniverse u 
+  | isGameOver u = u { universeGameOver = Just initGameOver } -- resetUniverse g u
   | isOnPlatform u = (upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)}
   | isNearPlatform u = (upUniverse dt u) {universePlayer = updatePlayer dt (keepPlayerNearPlatform (universePlayer u))}
   | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)}
@@ -104,12 +112,9 @@ upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatform
       }
 
 -- | Сбросить игру (начать с начала со случайными воротами).
-resetUniverse :: Universe -> Universe
-resetUniverse u = u
-  { universePlatforms  = tail (universePlatforms u)
-  , universePlayer = initPlayer
-  , universeScore  = 0
-  }
+resetUniverse :: StdGen -> Universe -> Universe
+resetUniverse g _ = initUniverse g
+
 
 isOnPlatform :: Universe -> Bool
 isOnPlatform u = playerBelowFloor || playerHitsPlatform
@@ -211,3 +216,13 @@ updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
 --  , playerFallingSpeed  = fs
 --  , playerSpeed = s
 --  }
+
+
+-- | Обработчик событий игры.
+handleUniverse :: StdGen -> Event -> Universe -> Universe
+handleUniverse _ (EventKey (SpecialKey KeyLeft) Down _ _) u = bumpPlayerLeft u
+handleUniverse _ (EventKey (SpecialKey KeyRight) Down _ _) u = bumpPlayerRight u
+handleUniverse _ (EventKey (SpecialKey KeyLeft) Up _ _) u = stopPlayer u
+handleUniverse _ (EventKey (SpecialKey KeyRight) Up _ _) u = stopPlayer u
+handleUniverse g (EventKey (SpecialKey KeySpace) Down _ _) u = resetUniverse g u
+handleUniverse _ _ u = u

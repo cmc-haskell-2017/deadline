@@ -18,10 +18,19 @@ drawPlatforms = pictures . map drawPlatform . takeWhile onScreen . absolutePlatf
 
 -- | Нарисовать одну платформу
 drawPlatform :: Platform -> Picture
-drawPlatform = color black . pictures . map drawBox . platformBoxes
+drawPlatform p = (pictures [ color (makeColorI 0 66 72 255) (pictures (map drawBox  (platformBoxes p)))
+                           , color (makeColorI 0 120 170 255) (pictures (map drawBox1 (platformBoxes p)))
+                           , color (makeColorI 0 66 72 255) (pictures (map drawBox2  (platformBoxes p)))
+                           , color (makeColorI 0 66 72 255) (pictures (map drawBox3  (platformBoxes p))) ])
   where
     drawBox ((l, b), (r, t)) = polygon
       [ (l, b), (r, b), (r, t), (l, t) ]
+    drawBox1 ((l, b), (r, t)) = polygon
+      [ (l+3, b+3), (r-3, b+3), (r-3, t-3), (l+3, t-3) ]
+    drawBox2 ((l, b), (r, t)) = polygon
+      [ (l, b+3), (l+3, b), (r, t-3), (r-3, t) ]
+    drawBox3 ((l, b), (r, t)) = polygon
+      [ (l, t-3), (l+3, t), (r, b+3), (r-3, b) ]
 
 -- | Обновить платформы игровой вселенной
 updatePlatforms :: Float -> [Platform] -> [Platform]
