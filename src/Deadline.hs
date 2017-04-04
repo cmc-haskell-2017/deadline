@@ -13,7 +13,7 @@ import Update
 runDeadline :: Images -> IO ()
 runDeadline images = do
   g <- newStdGen
-  play display bgColor fps (initUniverse g) (drawUniverse images) (handleUniverse g) updateUniverse
+  play display bgColor fps (initUniverse g) (drawUniverse images) handleUniverse updateUniverse
   where
     display = InWindow "DEADLINE" (screenWidth, screenHeight) (200, 200)
     bgColor = white   -- цвет фона

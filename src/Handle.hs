@@ -10,8 +10,13 @@ import Init
 
 
 -- | Сбросить игру (начать с начала со случайными воротами).
-resetUniverse :: StdGen -> Universe -> Universe
-resetUniverse g _ = initUniverse g
+resetUniverse :: Universe -> Universe
+resetUniverse u = u
+  { universePlatforms  = tail (universePlatforms u)
+  , universePlayer = initPlayer
+  , universeScore  = 0
+  , universeGameOver = Nothing
+  }
 
 -- | Подпрыгнуть (игроком), если можно.
 bumpPlayerLeft :: Universe -> Universe
@@ -39,10 +44,10 @@ stopPlayer u = u
     playerSpeed = 0}
 
 -- | Обработчик событий игры.
-handleUniverse :: StdGen -> Event -> Universe -> Universe
-handleUniverse _ (EventKey (SpecialKey KeyLeft) Down _ _) u = bumpPlayerLeft u
-handleUniverse _ (EventKey (SpecialKey KeyRight) Down _ _) u = bumpPlayerRight u
-handleUniverse _ (EventKey (SpecialKey KeyLeft) Up _ _) u = stopPlayer u
-handleUniverse _ (EventKey (SpecialKey KeyRight) Up _ _) u = stopPlayer u
-handleUniverse g (EventKey (SpecialKey KeySpace) Down _ _) u = resetUniverse g u
-handleUniverse _ _ u = u
+handleUniverse :: Event -> Universe -> Universe
+handleUniverse (EventKey (SpecialKey KeyLeft) Down _ _) u = bumpPlayerLeft u
+handleUniverse (EventKey (SpecialKey KeyRight) Down _ _) u = bumpPlayerRight u
+handleUniverse (EventKey (SpecialKey KeyLeft) Up _ _) u = stopPlayer u
+handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = stopPlayer u
+handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u = resetUniverse u
+handleUniverse _ u = u
