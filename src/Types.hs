@@ -24,7 +24,7 @@ data Player = Player
   { playerWidth :: Width
   , playerHeight :: Height  -- ^ Положение игрока по вертикали.
   , playerSpeed :: Float
-  , playerFallingSpeed  :: Float   -- ^ Скорость падения игрока.
+  , playerFallingSpeed :: Float   -- ^ Скорость падения игрока.
   }
 
 
@@ -96,7 +96,11 @@ platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
 
 -- | Скорость движения игрока по вселенной (в пикселях в секунду).
 speed :: Float
-speed = 100
+speed = 150
+
+-- | Скорость после "подпрыгивания".
+bumpSpeed :: Float
+bumpSpeed = 400
 
 -- | Положение игрока по горизонтали.
 playerOffset :: Offset
