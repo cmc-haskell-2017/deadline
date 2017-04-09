@@ -7,6 +7,7 @@ import Graphics.Gloss.Interface.Pure.Simulate
 import Graphics.Gloss.Juicy
 import Types
 
+-- | Инициализировать игровую вселенную.
 initUniverse :: StdGen -> Universe
 initUniverse g = Universe
   { universePlatforms  = initPlatforms g
@@ -17,7 +18,7 @@ initUniverse g = Universe
   , universeGameOver = Nothing
   }
 
--- | Начальное состояние игрока.
+-- | Инициализировать начальное состояние игрока.
 initPlayer :: Player
 initPlayer = Player
   { playerHeight = 300
@@ -26,15 +27,16 @@ initPlayer = Player
   , playerFallingSpeed  = 0
   }
 
--- | Инициализировать одни ворота.
+-- | Инициализировать одну платформу.
 initPlatform :: Width -> Platform
 initPlatform h = (h, defaultOffset)
 
 -- | Инициализировать случайный бесконечный
--- список ворот для игровой вселенной.
+-- список платформ для игровой вселенной.
 initPlatforms :: StdGen -> [Platform]
 initPlatforms g = map initPlatform
   (randomRs platformWidthRange g)
 
+-- | Инициализировать конец игры.
 initGameOver :: Point
 initGameOver = (0.32, 0.32)

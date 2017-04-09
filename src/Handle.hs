@@ -8,8 +8,7 @@ import Graphics.Gloss.Juicy
 import Types
 import Init
 
-
--- | Сбросить игру (начать с начала со случайными воротами).
+-- | Сбросить игру (начать с начала со случайными платформами).
 resetUniverse :: Universe -> Universe
 resetUniverse u = u
   { universePlatforms  = tail (universePlatforms u)
@@ -18,7 +17,7 @@ resetUniverse u = u
   , universeGameOver = Nothing
   }
 
--- | Подпрыгнуть (игроком), если можно.
+-- | Сдвинуть игрока влево.
 bumpPlayerLeft :: Universe -> Universe
 bumpPlayerLeft u = u
   { universePlayer = bump (universePlayer u)
@@ -27,6 +26,7 @@ bumpPlayerLeft u = u
     bump player = player {
     playerSpeed = -bumpSpeed }
 
+-- |Сдвинуть игрока вправо.
 bumpPlayerRight :: Universe -> Universe
 bumpPlayerRight u = u
   { universePlayer = bump (universePlayer u)
@@ -35,6 +35,7 @@ bumpPlayerRight u = u
     bump player = player {
     playerSpeed = bumpSpeed }
 
+-- | Остановить игрока.
 stopPlayer :: Universe -> Universe
 stopPlayer u = u
   { universePlayer = bump (universePlayer u)

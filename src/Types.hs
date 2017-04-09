@@ -3,24 +3,22 @@ import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Interface.Pure.Game
 
--- | Ширина 
+-- | Ширина. 
 type Width = Float
 
--- | Высота
+-- | Высота.
 type Height = Float
 
 -- | Положение блока (по горизонтали).
 type Offset = Float
 
--- | Ворота.
+-- | Платформа.
 type Platform   = (Width, Offset)
 
--- | Счёт.
---type Score = Float
- -- deriving (Num, Eq, Show, Integral, Ord)
-
+-- | Вектор.
 type Vector = (Int, Int)
 
+-- | Прямоугольник (игрок или платформа).
 data Square = Square
   { xCoordinateLeft :: Float,
     yCoordinateLeft :: Float,
@@ -30,11 +28,11 @@ data Square = Square
     ySpeed :: Float
   }
 
--- | Игрок
+-- | Игрок.
 data Player = Player
-  { playerWidth :: Width
-  , playerHeight :: Height  -- ^ Положение игрока по вертикали.
-  , playerSpeed :: Float
+  { playerWidth :: Width          -- ^ Положение игрока по горизонтали.
+  , playerHeight :: Height        -- ^ Положение игрока по вертикали.
+  , playerSpeed :: Float          -- ^ Скорость движения игрока по горизонтали.
   , playerFallingSpeed :: Float   -- ^ Скорость падения игрока.
   }
 
@@ -42,8 +40,8 @@ data Player = Player
 -- | Модель игровой вселенной.
 data Universe = Universe
   { universePlatforms   :: [Platform]   -- ^ Платформы игровой вселенной.
-  , universePlayer  :: Player   -- ^ Игрок
-  , universeScore   :: Float    -- ^ Счёт (количество пролетевших мимо платформ)
+  , universePlayer  :: Player           -- ^ Игрок
+  , universeScore   :: Float            -- ^ Счёт (количество пролетевших мимо платформ)
   , universeBorders :: Int
   , universeBackground :: Int
   , universeGameOver :: Maybe Point
@@ -72,33 +70,33 @@ screenRight = fromIntegral screenWidth / 2
 screenLeft :: Offset
 screenLeft = - fromIntegral screenWidth / 2
 
--- | Положение верхнего края экрана
+-- | Положение верхнего края экрана.
 screenUp :: Offset
 screenUp =  fromIntegral screenHeight / 2
 
--- | Положение нижнего края экрана
+-- | Положение нижнего края экрана.
 screenDown :: Offset
 screenDown = - fromIntegral screenHeight / 2
 
--- | Ширина платформы
+-- | Ширина платформы.
 platformWidth :: Float
 platformWidth = 120
 
--- | Высота платформы
+-- | Высота платформы.
 platformHeight :: Float
 platformHeight = 20
 
--- | Расстояние между платформами
+-- | Расстояние между платформами.
 defaultOffset :: Offset
 defaultOffset = 200
 
--- | Диапазон генерации платформ
+-- | Диапазон генерации платформ.
 platformWidthRange :: (Width, Width)
 platformWidthRange = (-w, w)
   where
     w = (fromIntegral screenWidth - platformWidth) / 2
 
--- | Параметры платформы
+-- | Параметры платформы.
 platformBoxes :: Platform -> [(Point, Point)]
 platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
   where

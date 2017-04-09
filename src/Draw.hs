@@ -4,19 +4,20 @@ import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Interface.Pure.Game
 import Types
 
+-- | Создать бесконечный список платформ.
 absolutePlatforms :: [Platform] -> [Platform]
 absolutePlatforms = go 0  
   where
     go  _ [] = []
     go  s ((w, o) : gs) = (w, s - o) : (go (s - o) gs)
 
--- | Отобразить все платформы игровой вселенной, вмещающиеся в экран
+-- | Отобразить все платформы игровой вселенной, вмещающиеся в экран.
 drawPlatforms :: [Platform] -> Picture
 drawPlatforms = pictures . map drawPlatform . takeWhile onScreen . absolutePlatforms
   where
     onScreen (_, offset) = offset - platformHeight > screenDown
 
--- | Нарисовать одну платформу
+-- | Нарисовать одну платформу.
 drawPlatform :: Platform -> Picture
 drawPlatform p = (pictures [ color (makeColorI 0 66 72 255) (pictures (map drawBox  (platformBoxes p)))
                            , color (makeColorI 0 120 170 255) (pictures (map drawBox1 (platformBoxes p)))
@@ -34,13 +35,13 @@ drawPlatform p = (pictures [ color (makeColorI 0 66 72 255) (pictures (map drawB
 
 -- | Нарисовать игрока.
 drawPlayer :: Picture -> Player -> Picture
-drawPlayer image player =translate x y (scale 0.1075 0.1075 image)
+drawPlayer image player = translate x y (scale 0.1075 0.1075 image)
   where
     (x, y) = (playerWidth player, playerHeight player)
 
+-- | Нарисовать задний фон.
 drawBackground :: Picture -> Picture
 drawBackground image = (scale 0.12 0.12 image)
-
 
 -- | Нарисовать границы сверху и снизу.
 drawBorders :: Picture
@@ -62,6 +63,7 @@ drawBorders = translate (-w) h (scale 30 30 (pictures
     w = fromIntegral screenWidth / 2
     h = fromIntegral screenHeight / 2
 
+-- | Нарисовать конец игры.
 drawGameOver :: Picture -> Maybe Point -> Picture
 drawGameOver _ Nothing = blank
 drawGameOver image (Just (x, y)) = (scale x y image)
@@ -86,10 +88,3 @@ drawUniverse images u = pictures
   , drawScore  (universeScore u)
   , drawGameOver (imageGameOver images) (universeGameOver u)
   ]
-
-playerPolygons :: Player -> [Path]
-playerPolygons player = map (map move)
-  [ [ (-800, -1200), (800, -1200), (800, 1000), (-800, 1000) ]
-  ]
-  where
-    move (x, y) = (playerWidth player, playerHeight player) + mulSV 0.03 (x, y)
