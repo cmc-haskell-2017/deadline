@@ -19,6 +19,17 @@ type Platform   = (Width, Offset)
 --type Score = Float
  -- deriving (Num, Eq, Show, Integral, Ord)
 
+type Vector = (Int, Int)
+
+data Square = Square
+  { xCoordinateLeft :: Float,
+    yCoordinateLeft :: Float,
+    xCoordinateRight :: Float,
+    yCoordinateRight :: Float,
+    xSpeed :: Float,
+    ySpeed :: Float
+  }
+
 -- | Игрок
 data Player = Player
   { playerWidth :: Width
@@ -96,7 +107,7 @@ platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
 
 -- | Скорость движения игрока по вселенной (в пикселях в секунду).
 speed :: Float
-speed = 250
+speed = 100
 
 -- | Скорость после "подпрыгивания".
 bumpSpeed :: Float

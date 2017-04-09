@@ -1,11 +1,139 @@
 module Update where
 
-import Graphics.Gloss.Data.Vector
-import Graphics.Gloss.Geometry.Line
-import Graphics.Gloss.Interface.Pure.Game
 import Types
 import Draw
 import Init
+
+-- | Обновить состояние игровой вселенной.
+updateUniverse :: Float -> Universe -> Universe
+updateUniverse dt u
+  | isGameOver u = u { universeGameOver = Just initGameOver } -- resetUniverse g u
+  | fst (isWithPlatform dt u) = (upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)}
+  | snd (isWithPlatform dt u) = (upUniverse dt u) {universePlayer = holdPlayer dt (universePlayer u)}
+  | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)}
+ 
+upUniverse:: Float -> Universe -> Universe 
+upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
+      , universeScore  = (universeScore u) + dt
+      }
+
+isWithPlatform :: Float -> Universe -> (Bool, Bool)
+isWithPlatform dt u = playerWithPlatform
+  where
+    playerWithPlatform = (collision dt (universePlayer u) (universePlatforms u))
+
+-- | Конец игры?
+isGameOver :: Universe -> Bool
+isGameOver u = playerBelowFloor || playerBelowRoof
+  where
+    playerBelowRoof = playerHeight (universePlayer u) >  screenUp - 30
+    playerBelowFloor = playerHeight (universePlayer u) < screenDown + 30
+
+-- | Сталкивается ли игрок с любыми из
+-- бесконечного списка ворот?
+collision :: Float -> Player -> [Platform] -> (Bool, Bool)
+collision _ _ [] = (False, False)
+collision dt player platforms = tupleOr (map (collides dt player) (takeWhile onScreen (absolutePlatforms platforms)))
+  where
+    onScreen (_, offset) = offset - platformHeight > screenDown
+
+tupleOrFirst :: [(Bool, Bool)] -> Bool
+tupleOrFirst [] = False
+tupleOrFirst list = or (map fst list)
+
+tupleOrSecond :: [(Bool, Bool)] -> Bool
+tupleOrSecond [] = False
+tupleOrSecond list = or (map snd list)
+
+tupleOr :: [(Bool, Bool)] -> (Bool, Bool)
+tupleOr [] = (False, False)
+tupleOr list = ((tupleOrFirst list), (tupleOrSecond list))
+
+rotateLeft :: Square -> Square
+rotateLeft square = Square {
+                  yCoordinateRight = -(xCoordinateRight square),
+                  yCoordinateLeft = -(xCoordinateLeft square),
+                  xCoordinateLeft = -(yCoordinateLeft square),
+                  xCoordinateRight = -(yCoordinateRight square),
+                  xSpeed = ySpeed square,
+                  ySpeed = - (xSpeed square)
+                }
+
+rotateRight :: Square -> Square
+rotateRight square = Square {
+                  yCoordinateRight = (xCoordinateLeft square),
+                  yCoordinateLeft = (xCoordinateRight square),
+                  xCoordinateLeft = (yCoordinateRight square),
+                  xCoordinateRight = (yCoordinateLeft square),
+                  xSpeed = ySpeed square,
+                  ySpeed = xSpeed square
+                }
+-- |  Становится ли игрок на платформу?
+collides :: Float -> Player -> Platform -> (Bool, Bool)
+collides dt player platform = ((collidesHelper playerSquare platformSquare), 
+  or [(collidesHelper (rotateLeft playerSquare) (rotateLeft platformSquare)), 
+  (collidesHelper (rotateRight playerSquare) (rotateRight platformSquare))])
+  where playerSquare = Square {
+          xCoordinateLeft = (playerWidth player - widthOfPlayer),
+          yCoordinateRight = (playerHeight player - heigthOfPlayer), --  + dt * (playerFallingSpeed player)),
+          xCoordinateRight = (playerWidth player + widthOfPlayer),
+          yCoordinateLeft = (playerHeight player + heigthOfPlayer), -- + dt * (playerFallingSpeed player)),
+          xSpeed = dt * (playerSpeed player),
+          ySpeed = dt * (playerFallingSpeed player)
+        }
+        platformSquare = Square {
+          xCoordinateLeft = (fst platform - platformWidth /2),
+          yCoordinateRight = (snd platform), -- + dt * speed),
+          xCoordinateRight = (fst platform + platformWidth /2),
+          yCoordinateLeft = (snd platform + platformHeight), -- + dt * speed)
+          xSpeed = 0,
+          ySpeed = speed * dt
+        }
+        heigthOfPlayer = 1200 * 0.03
+        widthOfPlayer = 800 * 0.03
+
+collidesHelper :: Square -> Square -> Bool
+collidesHelper player platform = 
+  (and [(yCoordinateRight player > yCoordinateRight platform),
+  (yCoordinateRight player + ySpeed player < yCoordinateLeft platform + ySpeed platform), 
+  (yCoordinateRight player + platformHeight/4 > yCoordinateLeft platform), 
+  (xCoordinateLeft player < xCoordinateRight platform), 
+  (xCoordinateRight player > xCoordinateLeft platform)])
+
+keepPlayerOnScreen :: Float -> Player -> Player 
+keepPlayerOnScreen dt player = player {
+  playerWidth = (max (min w (playerWidth player) + dt * (playerSpeed player)) wm)
+} 
+  where
+    w = 200
+    wm = -200 
+
+keepPlayerOnPlatform :: Float -> Player -> Player
+keepPlayerOnPlatform dt player = player {
+   playerFallingSpeed = speed,
+   playerHeight = playerHeight player + dt * speed
+}
+
+holdPlayerOnPlatform :: Float -> Player -> Player
+holdPlayerOnPlatform dt player = player {
+   playerSpeed = 0,
+   playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
+   playerHeight = (playerHeight player) + dt * ((playerFallingSpeed player) + dt * (gravity / 2))
+}
+
+
+keepPlayer :: Float -> Player-> Player
+keepPlayer dt player = keepPlayerOnScreen dt (keepPlayerOnPlatform dt player)
+
+holdPlayer :: Float -> Player-> Player
+holdPlayer dt player = keepPlayerOnScreen dt (holdPlayerOnPlatform dt player)
+
+movePlayer :: Float -> Player -> Player
+movePlayer dt player = player {
+  playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
+  playerHeight = (playerHeight player) + dt * ((playerFallingSpeed player) + dt * (gravity / 2))
+}
+
 
 -- | Обновить платформы игровой вселенной
 updatePlatforms :: Float -> [Platform] -> [Platform]
@@ -18,98 +146,5 @@ updatePlatforms dt ((width, offset) : platforms)
     dy  =  dt * speed
     dt' = dt -  offset / speed
     
--- | Обновить состояние игровой вселенной.
-updateUniverse :: Float -> Universe -> Universe
-updateUniverse dt u
-  | isGameOver u = u { universeGameOver = Just initGameOver } -- resetUniverse g u
-  | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u) u}
- 
-upUniverse:: Float -> Universe -> Universe 
-upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
-      , universeScore  = (universeScore u) + dt
-      }
-
--- | Конец игры?
-isGameOver :: Universe -> Bool
-isGameOver u = playerBelowFloor || playerBelowRoof
-  where
-    playerBelowRoof = playerHeight (universePlayer u) >  screenUp - 30
-    playerBelowFloor = playerHeight (universePlayer u) < screenDown + 30
-
--- | Сталкивается ли игрок с любыми из
--- бесконечного списка ворот?
-collision :: Float -> Player -> [Platform] -> (Height, Float)
-collision dt player [] = (playerHeight player + dt *( playerFallingSpeed player + gravity/2 * dt) , playerFallingSpeed player + gravity/2 *dt)
-collision dt player platforms = newHeightPlayer (map (collides dt player) (takeWhile onScreen (absolutePlatforms platforms))) noPlatform
-  where
-    onScreen (_, offset) = offset - platformHeight > screenDown
-    noPlatform = (playerHeight player + dt *(playerFallingSpeed player + gravity/2 * dt) , playerFallingSpeed player + gravity/2 *dt)
-
-newHeightPlayer :: [Maybe a] -> a -> a
-newHeightPlayer [] platform = platform
-newHeightPlayer (Nothing : xs) p = newHeightPlayer xs p
-newHeightPlayer ((Just new) : xs) _ = new
-
-collide :: Float -> Player -> Platform -> Bool
-collide dt player platform = and [
-  ((playerHeight player - heigthOfPlayer - dt * (playerFallingSpeed player)) < (snd platform + platformHeight + speed * dt)), 
-  ((playerHeight player - heigthOfPlayer) > (snd platform - platformHeight)), 
-  ((playerWidth player - widthOfPlayer) < (fst platform + platformWidth /2)), 
-  ((playerWidth player + widthOfPlayer) > (fst platform - platformWidth /2))
-  ]
-  where heigthOfPlayer = 1200*0.03
-        widthOfPlayer = 800*0.03
-
-collidesNear :: Player -> Platform -> Bool
-collidesNear player platform = or[ 
-  polygonBoxCollides polygon box
-  | polygon <- playerPolygons player
-  , box <- platformBoxes platform ]
-
-polygonBoxCollides :: Path -> (Point, Point) -> Bool
-polygonBoxCollides xs (lb, rt) = or
-  [ not (segClearsBox p1 p2 lb rt)
-  | (p1, p2) <- zip xs (tail (cycle xs)) ]
-
-
-
--- |  Становится ли игрок на платформу?
-collides :: Float -> Player -> Platform -> Maybe (Height, Float)
-collides dt player platform |collide dt player platform = (Just ( snd platform + platformHeight + speed * dt + heigthOfPlayer, speed *dt))
-                            |otherwise = Nothing
-  where heigthOfPlayer = 1200*0.03
-   
-
-inPlatform :: Float -> Player -> Float -> [Platform] -> Width
-inPlatform dt player wid [] = wid
-inPlatform dt player wid platforms = newHeightPlayer (map (inplat dt player wid) (takeWhile onScreen (absolutePlatforms platforms))) wid
-  where
-    onScreen (_, offset) = offset - platformHeight > screenDown
-
-inplat :: Float -> Player -> Float -> Platform -> Maybe Width
-inplat dt player wid platform |and [  
-  not (collide dt player platform),
-  collidesNear player platform
-  ] = (Just (playerWidth player))
-                         |otherwise = Nothing
-   where widthOfPlayer = 800*0.03
-
--- | Обновить состояние игрока.
--- Игрок не может прыгнуть выше потолка.
- -- | Обновить состояние игрока.
-
-keepPlayerOnScreen :: Float -> Player -> [Platform] -> Player 
-keepPlayerOnScreen dt player platform = player {
-  playerWidth = inPlatform dt player width platform
-} 
-  where
-    width = (max (min w (playerWidth player) + dt * (playerSpeed player)) wm)
-    w = 200
-    wm = -200 
-
-updatePlayer :: Float -> Player -> Universe -> Player
-updatePlayer dt player u = (keepPlayerOnScreen dt player (universePlatforms u)) {
-  playerHeight = fst height,
-  playerFallingSpeed = snd height
-}
-  where height = collision dt player (universePlatforms u)
+updatePlayer :: Float -> Player -> Player
+updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
