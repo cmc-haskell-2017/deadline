@@ -29,4 +29,4 @@ loadImages = do
     { imagePers   = scale 3 3 pers
     , imageBackground = scale 3 3 bgrd 
     , imageGameOver = scale 3 3 gover
-    }vector
+    }
