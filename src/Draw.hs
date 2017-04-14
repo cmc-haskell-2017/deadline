@@ -48,21 +48,21 @@ drawBorders :: Picture
 drawBorders = translate (-w) h (scale 30 30 (pictures
   [ color red (polygon [ (0, 0), (0, -2), (15, -2), (15, 0) ])            -- верхняя граница
   , color red (polygon [ (0, -21.5), (0, -24), (15, -24), (15, -21.5) ]) -- нижняя граница
+  , color red (polygon [ (0, 0), (0, -2), (3, -2), (3, 0) ])
   ]))
   where
     w = fromIntegral screenWidth / 2
     h = fromIntegral screenHeight / 2
 
 -- | Нарисрвать текст
-drawText :: Picture
-drawText = translate (-w) h (scale 30 30 (pictures 
+drawText :: Float -> Picture
+drawText score = translate (-w) h (scale 30 30 (pictures 
   (concat [(drawTextList 5 4.5 (-1.5) "DEADLINE")
-          ,(drawTextList 3 4.35 (-22.9) "exhaustion")])
-  ))
+          ,(drawTextList 3 4.35 (-22.9) "exhaustion")
+          ,(drawTextList 3 1 (-1.5) (show (truncate score)))])))
   where
     w = fromIntegral screenWidth / 2
     h = fromIntegral screenHeight / 2
-
 
 -- | Составить список текста со смещением
 drawTextList :: Int -> Float -> Float -> String -> [Picture]
@@ -78,16 +78,6 @@ drawGameOver :: Picture -> Maybe Point -> Picture
 drawGameOver _ Nothing = blank
 drawGameOver image (Just (x, y)) = (scale x y image)
 
--- | Нарисовать счёт в левом верхнем углу экрана.
-drawScore :: Float -> Picture
-drawScore score = translate (-w) h (scale 30 30 (pictures
-  [ color red (polygon [ (0, 0), (0, -2), (3, -2), (3, 0) ])            -- красный квадрат
-  , translate 1 (-1.5) (scale 0.01 0.01 (color black (text (show  (truncate score)))))  -- черный счёт
-  ]))
-  where
-    w = fromIntegral screenWidth  / 2
-    h = fromIntegral screenHeight / 2
-
 -- | Отобразить игровую вселенную.
 drawUniverse :: Images -> Universe -> Picture
 drawUniverse images u = pictures
@@ -95,7 +85,7 @@ drawUniverse images u = pictures
   , drawPlatforms  (universePlatforms u)
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
   , drawBorders
-  , drawText
-  , drawScore  (universeScore u)
+  , drawText (universeScore u)
+  --, drawScore  (universeScore u)
   , drawGameOver (imageGameOver images) (universeGameOver u)
   ]
