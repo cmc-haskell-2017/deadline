@@ -41,7 +41,7 @@ drawPlayer image player = translate x y (scale 0.1075 0.1075 image)
 
 -- | Нарисовать задний фон.
 drawBackground :: Picture -> Picture -> Background -> Picture
-drawBackground bg1 bg2 bg = pictures [ (translate 1 y1 (scale 0.12 0.12 bg1)), (translate 1 y2 (scale 0.12 0.12 bg2))]
+drawBackground bg1 bg2 bg = pictures [ (translate 1 y1 bg1), (translate 1 y2 bg2)]
     where
       (y1, y2) = (bgHeight1 bg, bgHeight2 bg)
 
