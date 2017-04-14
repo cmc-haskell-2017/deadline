@@ -28,6 +28,11 @@ data Square = Square
     ySpeed :: Float
   }
 
+data Background = Background
+  { bgHeight1 :: Height
+  , bgHeight2 :: Height
+  , bgSpeed :: Float
+  }
 -- | Игрок.
 data Player = Player
   { playerWidth :: Width          -- ^ Положение игрока по горизонтали.
@@ -43,14 +48,15 @@ data Universe = Universe
   , universePlayer  :: Player           -- ^ Игрок
   , universeScore   :: Float            -- ^ Счёт (количество пролетевших мимо платформ)
   , universeBorders :: Int
-  , universeBackground :: Int
+  , universeBackground :: Background
   , universeGameOver :: Maybe Point
   }
 
 -- | Изображения объектов.
 data Images = Images
   { imagePers  :: Picture   -- ^ Изображение персонажа.
-  , imageBackground  :: Picture
+  , imageBackground1  :: Picture
+  , imageBackground2  :: Picture
   , imageGameOver :: Picture
   }
 

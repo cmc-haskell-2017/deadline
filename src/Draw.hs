@@ -40,8 +40,11 @@ drawPlayer image player = translate x y (scale 0.1075 0.1075 image)
     (x, y) = (playerWidth player, playerHeight player)
 
 -- | Нарисовать задний фон.
-drawBackground :: Picture -> Picture
-drawBackground image = (scale 0.12 0.12 image)
+drawBackground :: Picture -> Picture -> Background -> Picture
+drawBackground bg1 bg2 bg = pictures [ (translate 1 y1 (scale 0.12 0.12 bg1)), (translate 1 y2 (scale 0.12 0.12 bg2))]
+    where
+      (y1, y2) = (bgHeight1 bg, bgHeight2 bg)
+
 
 -- | Нарисовать границы сверху и снизу.
 drawBorders :: Picture
@@ -81,7 +84,7 @@ drawScore score = translate (-w) h (scale 30 30 (pictures
 -- | Отобразить игровую вселенную.
 drawUniverse :: Images -> Universe -> Picture
 drawUniverse images u = pictures
-  [ drawBackground (imageBackground images)
+  [ drawBackground (imageBackground1 images) (imageBackground2 images) (universeBackground u)
   , drawPlatforms  (universePlatforms u)
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
   , drawBorders

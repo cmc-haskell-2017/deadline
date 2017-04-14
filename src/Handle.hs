@@ -15,6 +15,7 @@ resetUniverse u = u
   , universePlayer = initPlayer
   , universeScore  = 0
   , universeGameOver = Nothing
+  , universeBackground = initBackground
   }
 
 -- | Сдвинуть игрока влево.
