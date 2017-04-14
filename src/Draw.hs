@@ -46,22 +46,32 @@ drawBackground image = (scale 0.12 0.12 image)
 -- | Нарисовать границы сверху и снизу.
 drawBorders :: Picture
 drawBorders = translate (-w) h (scale 30 30 (pictures
-  [ color red (polygon [ (0, 0), (0, -2), (sw, -2), (sw, 0) ])            -- верхняя граница
-  , translate 4.5 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))  -- "deadline"
-  , translate 4.6 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
-  , translate 4.55 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
-  , translate 4.52 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
-  , translate 4.57 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
-  , color red (polygon [ (0, -sh+1.5), (0, -sh-1), (sw, -sh-1), (sw, -sh+1.5) ]) -- нижняя граница
-  , translate 4.35 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion"))) -- "exhaustion"
-  , translate 4.32 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion")))
-  , translate 4.37 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion")))
+  [ color red (polygon [ (0, 0), (0, -2), (15, -2), (15, 0) ])            -- верхняя граница
+  , color red (polygon [ (0, -21.5), (0, -24), (15, -24), (15, -21.5) ]) -- нижняя граница
   ]))
   where
-    sw = 15 
-    sh = 23
     w = fromIntegral screenWidth / 2
     h = fromIntegral screenHeight / 2
+
+-- | Нарисрвать текст
+drawText :: Picture
+drawText = translate (-w) h (scale 30 30 (pictures 
+  (concat [(drawTextList 5 4.5 (-1.5) "DEADLINE")
+          ,(drawTextList 3 4.35 (-22.9) "exhaustion")])
+  ))
+  where
+    w = fromIntegral screenWidth / 2
+    h = fromIntegral screenHeight / 2
+
+
+-- | Составить список текста со смещением
+drawTextList :: Int -> Float -> Float -> String -> [Picture]
+drawTextList 0 _ _ _ = []
+drawTextList k w h s = (drawTextFunc w h s) : (drawTextList (k-1) (w+0.02) h s) 
+
+-- | Отрисоать одно слово
+drawTextFunc :: Float -> Float -> String -> Picture
+drawTextFunc w h s = translate w (h) (scale 0.01 0.01 (color black (text s)))
 
 -- | Нарисовать конец игры.
 drawGameOver :: Picture -> Maybe Point -> Picture
@@ -85,6 +95,7 @@ drawUniverse images u = pictures
   , drawPlatforms  (universePlatforms u)
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
   , drawBorders
+  , drawText
   , drawScore  (universeScore u)
   , drawGameOver (imageGameOver images) (universeGameOver u)
   ]
