@@ -13,8 +13,7 @@ initUniverse g = Universe
   { universePlatforms  = initPlatforms g
   , universePlayer = initPlayer
   , universeScore  = 0
-  , universeBorders = 0
-  , universeBackground = 0
+  , universeBackground = initBackground
   , universeGameOver = Nothing
   }
 
@@ -24,6 +23,7 @@ initPlayer = Player
   { playerHeight = 300
   , playerWidth = 0
   , playerSpeed = 0
+  , playerIsOnPlatform = False
   , playerFallingSpeed  = 0
   }
 
@@ -37,6 +37,12 @@ initPlatforms :: StdGen -> [Platform]
 initPlatforms g = map initPlatform
   (randomRs platformWidthRange g)
 
+initBackground :: Background
+initBackground = Background
+  { bgHeight1 = 345
+  , bgHeight2 = -345
+  , bgSpeed = 50
+  }
 -- | Инициализировать конец игры.
 initGameOver :: Point
 initGameOver = (0.32, 0.32)

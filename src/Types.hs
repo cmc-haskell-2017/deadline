@@ -28,12 +28,18 @@ data Square = Square
     ySpeed :: Float
   }
 
+data Background = Background
+  { bgHeight1 :: Height
+  , bgHeight2 :: Height
+  , bgSpeed :: Float
+  }
 -- | Игрок.
 data Player = Player
   { playerWidth :: Width          -- ^ Положение игрока по горизонтали.
   , playerHeight :: Height        -- ^ Положение игрока по вертикали.
   , playerSpeed :: Float          -- ^ Скорость движения игрока по горизонтали.
   , playerFallingSpeed :: Float   -- ^ Скорость падения игрока.
+  , playerIsOnPlatform :: Bool
   }
 
 
@@ -42,15 +48,15 @@ data Universe = Universe
   { universePlatforms   :: [Platform]   -- ^ Платформы игровой вселенной.
   , universePlayer  :: Player           -- ^ Игрок
   , universeScore   :: Float            -- ^ Счёт (количество пролетевших мимо платформ)
-  , universeBorders :: Int
-  , universeBackground :: Int
+  , universeBackground :: Background
   , universeGameOver :: Maybe Point
   }
 
 -- | Изображения объектов.
 data Images = Images
   { imagePers  :: Picture   -- ^ Изображение персонажа.
-  , imageBackground  :: Picture
+  , imageBackground1  :: Picture
+  , imageBackground2  :: Picture
   , imageGameOver :: Picture
   }
 
@@ -106,6 +112,9 @@ platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
 -- | Скорость движения игрока по вселенной (в пикселях в секунду).
 speed :: Float
 speed = 100
+
+jumpSpeed :: Float
+jumpSpeed = 480
 
 -- | Скорость после "подпрыгивания".
 bumpSpeed :: Float

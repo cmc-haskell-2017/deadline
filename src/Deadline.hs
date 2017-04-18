@@ -27,6 +27,7 @@ loadImages = do
   Just gover  <- loadJuicyPNG "src/gameover.png"
   return Images
     { imagePers   = scale 3 3 pers
-    , imageBackground = scale 3 3 bgrd 
+    , imageBackground1 = scale 3 3 bgrd 
+    , imageBackground2 = scale 3 3 bgrd 
     , imageGameOver = scale 3 3 gover
-    }vector
+    }

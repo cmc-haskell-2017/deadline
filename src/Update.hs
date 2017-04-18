@@ -4,6 +4,12 @@ import Types
 import Draw
 import Init
 
+--1) чувачок мог подпрыгивать, только с платформы
+--2) отрисовка текста - сделать функцию которая жирно отрисовывает текст (сколько раз и с каким сдвигом)
+--3) сделать чтобы фон двигался (скорость меньше чем скорость всего остального)
+--4) уничтожение платформы со временем
+
+
 -- | Обновить состояние игровой вселенной.
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
@@ -16,6 +22,7 @@ updateUniverse dt u
 upUniverse:: Float -> Universe -> Universe 
 upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)
       , universeScore  = (universeScore u) + dt
+      , universeBackground = updateBackground dt (universeBackground u)
       }
 
 -- | Проверка на столкновение.
@@ -122,6 +129,7 @@ keepPlayerOnScreen dt player = player {
 keepPlayerOnPlatform :: Float -> Player -> Player
 keepPlayerOnPlatform dt player = player {
    playerFallingSpeed = speed,
+   playerIsOnPlatform = True,
    playerHeight = playerHeight player + dt * speed
 }
 
@@ -129,6 +137,7 @@ keepPlayerOnPlatform dt player = player {
 holdPlayerOnPlatform :: Float -> Player -> Player
 holdPlayerOnPlatform dt player = player {
    playerSpeed = 0,
+   playerIsOnPlatform = False,
    playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
    playerHeight = (playerHeight player) + dt * ((playerFallingSpeed player) + dt * (gravity / 2))
 }
@@ -145,6 +154,7 @@ holdPlayer dt player = keepPlayerOnScreen dt (holdPlayerOnPlatform dt player)
 movePlayer :: Float -> Player -> Player
 movePlayer dt player = player {
   playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
+  playerIsOnPlatform = False,
   playerHeight = (playerHeight player) + dt * ((playerFallingSpeed player) + dt * (gravity / 2))
 }
 
@@ -162,3 +172,22 @@ updatePlatforms dt ((width, offset) : platforms)
 -- | Обновление состояния игрока.
 updatePlayer :: Float -> Player -> Player
 updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
+
+updateBackground :: Float -> Background -> Background
+updateBackground dt bg
+  | (bgHeight1 bg) > 700 = bg {
+  bgHeight1 = (bgHeight2 bg) - 690,
+  bgHeight2 = (bgHeight2 bg) + dt * (bgSpeed bg)
+}
+  | (bgHeight2 bg) > 700 = bg {
+  bgHeight1 = (bgHeight1 bg) + dt * (bgSpeed bg),
+  bgHeight2 = (bgHeight1 bg) - 690
+}
+  | otherwise = bg {
+  bgHeight1 = (bgHeight1 bg) + dt * (bgSpeed bg),
+  bgHeight2 = (bgHeight2 bg) + dt * (bgSpeed bg)
+}
+
+
+
+
