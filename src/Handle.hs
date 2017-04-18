@@ -7,16 +7,6 @@ import Graphics.Gloss.Interface.Pure.Simulate
 import Graphics.Gloss.Juicy
 import Types
 import Init
-import Update
-
--- | Сбросить игру (начать с начала со случайными платформами).
-resetUniverse :: Universe -> Universe
-resetUniverse u = u
-  { universePlatforms  = tail (universePlatforms u)
-  , universePlayer = initPlayer
-  , universeScore  = 0
-  , universeGameOver = Nothing
-  }
 
 -- | Сдвинуть игрока влево.
 bumpPlayerLeft :: Universe -> Universe
@@ -26,15 +16,6 @@ bumpPlayerLeft u = u
   where
     bump player = player {
     playerSpeed = -bumpSpeed }
-
--- | Сдвинуть игрока вверх.
-bumpPlayerUp :: Universe -> Universe
-bumpPlayerUp u = u
-  { universePlayer = bump (universePlayer u)
-  }
-  where
-    bump player = player {
-    playerFallingSpeed = jumpSpeed }
 
 -- |Сдвинуть игрока вправо.
 bumpPlayerRight :: Universe -> Universe
@@ -57,11 +38,12 @@ stopPlayer u = u
 -- | Обработчик событий игры.
 handleUniverse :: Event -> Universe -> Universe
 handleUniverse (EventKey (SpecialKey KeyLeft) Down _ _) u = bumpPlayerLeft u
-handleUniverse (EventKey (SpecialKey KeyUp) Down _ _) u
-   | (playerIsOnPlatform (universePlayer u)) = bumpPlayerUp u
-   | otherwise = u
 handleUniverse (EventKey (SpecialKey KeyRight) Down _ _) u = bumpPlayerRight u
 handleUniverse (EventKey (SpecialKey KeyLeft) Up _ _) u = stopPlayer u
 handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = stopPlayer u
-handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u = resetUniverse u
+handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u = initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u))))
 handleUniverse _ u = u
+
+-- | Выбрать первый элемент кортежа из трех элементов.
+firstOfTuple :: Platform -> Int
+firstOfTuple (x, y, z) = truncate x

@@ -12,10 +12,13 @@ type Height = Float
 -- | Положение блока (по горизонтали).
 type Offset = Float
 
--- | Платформа.
-type Platform   = (Width, Offset)
+-- | Жизнь платформы.
+type Life = Float
 
--- | Вектор.
+-- | Платформа.
+type Platform   = (Width, Offset, Life)
+
+-- | Вектор. 
 type Vector = (Int, Int)
 
 -- | Прямоугольник (игрок или платформа).
@@ -28,18 +31,12 @@ data Square = Square
     ySpeed :: Float
   }
 
-data Background = Background
-  { bgHeight1 :: Height
-  , bgHeight2 :: Height
-  , bgSpeed :: Float
-  }
 -- | Игрок.
 data Player = Player
   { playerWidth :: Width          -- ^ Положение игрока по горизонтали.
   , playerHeight :: Height        -- ^ Положение игрока по вертикали.
   , playerSpeed :: Float          -- ^ Скорость движения игрока по горизонтали.
   , playerFallingSpeed :: Float   -- ^ Скорость падения игрока.
-  , playerIsOnPlatform :: Bool
   }
 
 
@@ -48,15 +45,13 @@ data Universe = Universe
   { universePlatforms   :: [Platform]   -- ^ Платформы игровой вселенной.
   , universePlayer  :: Player           -- ^ Игрок
   , universeScore   :: Float            -- ^ Счёт (количество пролетевших мимо платформ)
-  , universeBackground :: Background
   , universeGameOver :: Maybe Point
   }
 
 -- | Изображения объектов.
 data Images = Images
   { imagePers  :: Picture   -- ^ Изображение персонажа.
-  , imageBackground1  :: Picture
-  , imageBackground2  :: Picture
+  , imageBackground  :: Picture
   , imageGameOver :: Picture
   }
 
@@ -104,7 +99,7 @@ platformWidthRange = (-w, w)
 
 -- | Параметры платформы.
 platformBoxes :: Platform -> [(Point, Point)]
-platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
+platformBoxes (x, y, l) = [((x - w, y), (x + w, y + h))]
   where
     w = platformWidth / 2
     h = platformHeight
@@ -112,9 +107,6 @@ platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
 -- | Скорость движения игрока по вселенной (в пикселях в секунду).
 speed :: Float
 speed = 100
-
-jumpSpeed :: Float
-jumpSpeed = 480
 
 -- | Скорость после "подпрыгивания".
 bumpSpeed :: Float
@@ -127,3 +119,7 @@ playerOffset = screenLeft + 200
 -- | Ускорение свободного падения.
 gravity :: Float
 gravity = -970
+
+-- | Время жизни платформы.
+timeOfLife :: Float
+timeOfLife = 0.5

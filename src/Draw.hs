@@ -4,18 +4,11 @@ import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Interface.Pure.Game
 import Types
 
--- | Создать бесконечный список платформ.
-absolutePlatforms :: [Platform] -> [Platform]
-absolutePlatforms = go 0  
-  where
-    go  _ [] = []
-    go  s ((w, o) : gs) = (w, s - o) : (go (s - o) gs)
-
 -- | Отобразить все платформы игровой вселенной, вмещающиеся в экран.
 drawPlatforms :: [Platform] -> Picture
-drawPlatforms = pictures . map drawPlatform . takeWhile onScreen . absolutePlatforms
+drawPlatforms = pictures . map drawPlatform . takeWhile onScreen
   where
-    onScreen (_, offset) = offset - platformHeight > screenDown
+    onScreen (_, offset,_) = offset - platformHeight > screenDown
 
 -- | Нарисовать одну платформу.
 drawPlatform :: Platform -> Picture
@@ -40,18 +33,26 @@ drawPlayer image player = translate x y (scale 0.1075 0.1075 image)
     (x, y) = (playerWidth player, playerHeight player)
 
 -- | Нарисовать задний фон.
-drawBackground :: Picture -> Picture -> Background -> Picture
-drawBackground bg1 bg2 bg = pictures [ (translate 1 y1 bg1), (translate 1 y2 bg2)]
-    where
-      (y1, y2) = (bgHeight1 bg, bgHeight2 bg)
+drawBackground :: Picture -> Picture
+drawBackground image = (scale 0.12 0.12 image)
 
 -- | Нарисовать границы сверху и снизу.
 drawBorders :: Picture
 drawBorders = translate (-w) h (scale 30 30 (pictures
-  [ color red (polygon [ (0, 0), (0, -2), (15, -2), (15, 0) ])            -- верхняя граница
-  , color red (polygon [ (0, -21.5), (0, -24), (15, -24), (15, -21.5) ]) -- нижняя граница
+  [ color red (polygon [ (0, 0), (0, -2), (sw, -2), (sw, 0) ])            -- верхняя граница
+  , translate 4.5 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))  -- "deadline"
+  , translate 4.6 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
+  , translate 4.55 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
+  , translate 4.52 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
+  , translate 4.57 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
+  , color red (polygon [ (0, -sh+1.5), (0, -sh-1), (sw, -sh-1), (sw, -sh+1.5) ]) -- нижняя граница
+  , translate 4.35 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion"))) -- "exhaustion"
+  , translate 4.32 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion")))
+  , translate 4.37 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion")))
   ]))
   where
+    sw = 15 
+    sh = 23
     w = fromIntegral screenWidth / 2
     h = fromIntegral screenHeight / 2
 
@@ -59,32 +60,24 @@ drawBorders = translate (-w) h (scale 30 30 (pictures
 drawGameOver :: Picture -> Maybe Point -> Picture
 drawGameOver _ Nothing = blank
 drawGameOver image (Just (x, y)) = (scale x y image)
-----------------------------------------------------------
--- | Нарисрвать текст
-drawText :: Int -> Float -> Float -> String -> Picture
-drawText k w h s = translate (-sw) sh (scale 30 30 (pictures (drawTextList k w h s)))
+
+-- | Нарисовать счёт в левом верхнем углу экрана.
+drawScore :: Float -> Picture
+drawScore score = translate (-w) h (scale 30 30 (pictures
+  [ color red (polygon [ (0, 0), (0, -2), (3, -2), (3, 0) ])            -- красный квадрат
+  , translate 1 (-1.5) (scale 0.01 0.01 (color black (text (show  (truncate score)))))  -- черный счёт
+  ]))
   where
-    sw = fromIntegral screenWidth / 2
-    sh = fromIntegral screenHeight / 2
-
--- | Составить список текста со смещением
-drawTextList :: Int -> Float -> Float -> String -> [Picture]
-drawTextList 0 _ _ _ = []
-drawTextList k w h s = (drawTextFunc w h s) : (drawTextList (k-1) (w+0.02) (h+0.01) s) 
-
--- | Отрисоать одно слово
-drawTextFunc :: Float -> Float -> String -> Picture
-drawTextFunc w h s = translate w (h) (scale 0.01 0.01 (color black (text s)))
+    w = fromIntegral screenWidth  / 2
+    h = fromIntegral screenHeight / 2
 
 -- | Отобразить игровую вселенную.
 drawUniverse :: Images -> Universe -> Picture
 drawUniverse images u = pictures
-  [ drawBackground (imageBackground1 images) (imageBackground2 images) (universeBackground u)
+  [ drawBackground (imageBackground images)
   , drawPlatforms  (universePlatforms u)
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
   , drawBorders
-  , drawText 5 4.5 (-1.5) "DEADLINE"
-  , drawText 5 4.35 (-22.9) "exhaustion"
-  , drawText 5 1 (-1.5) (show (truncate (universeScore u)))
+  , drawScore  (universeScore u)
   , drawGameOver (imageGameOver images) (universeGameOver u)
   ]
