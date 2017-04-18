@@ -12,8 +12,11 @@ type Height = Float
 -- | Положение блока (по горизонтали).
 type Offset = Float
 
+-- | Жизнь платформы.
+type Life = Float
+
 -- | Платформа.
-type Platform   = (Width, Offset)
+type Platform   = (Width, Offset, Life)
 
 -- | Вектор.
 type Vector = (Int, Int)
@@ -104,14 +107,14 @@ platformWidthRange = (-w, w)
 
 -- | Параметры платформы.
 platformBoxes :: Platform -> [(Point, Point)]
-platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
+platformBoxes (x, y, l) = [((x - w, y), (x + w, y + h))]
   where
     w = platformWidth / 2
     h = platformHeight
 
 -- | Скорость движения игрока по вселенной (в пикселях в секунду).
 speed :: Float
-speed = 100
+speed = 200
 
 jumpSpeed :: Float
 jumpSpeed = 480
@@ -127,3 +130,7 @@ playerOffset = screenLeft + 200
 -- | Ускорение свободного падения.
 gravity :: Float
 gravity = -970
+
+-- | Время жизни платформы.
+timeOfLife :: Float
+timeOfLife = 1.0

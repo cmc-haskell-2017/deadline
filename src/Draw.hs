@@ -4,18 +4,11 @@ import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Interface.Pure.Game
 import Types
 
--- | Создать бесконечный список платформ.
-absolutePlatforms :: [Platform] -> [Platform]
-absolutePlatforms = go 0  
-  where
-    go  _ [] = []
-    go  s ((w, o) : gs) = (w, s - o) : (go (s - o) gs)
-
 -- | Отобразить все платформы игровой вселенной, вмещающиеся в экран.
 drawPlatforms :: [Platform] -> Picture
-drawPlatforms = pictures . map drawPlatform . takeWhile onScreen . absolutePlatforms
+drawPlatforms = pictures . map drawPlatform . takeWhile onScreen
   where
-    onScreen (_, offset) = offset - platformHeight > screenDown
+    onScreen (_, offset,_) = offset - platformHeight > screenDown
 
 -- | Нарисовать одну платформу.
 drawPlatform :: Platform -> Picture
@@ -32,6 +25,7 @@ drawPlatform p = (pictures [ color (makeColorI 0 66 72 255) (pictures (map drawB
       [ (l, b+3), (l+3, b), (r, t-3), (r-3, t) ]
     drawBox3 ((l, b), (r, t)) = polygon
       [ (l, t-3), (l+3, t), (r, b+3), (r-3, b) ]
+
 
 -- | Нарисовать игрока.
 drawPlayer :: Picture -> Player -> Picture

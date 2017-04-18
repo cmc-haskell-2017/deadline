@@ -10,12 +10,19 @@ import Types
 -- | Инициализировать игровую вселенную.
 initUniverse :: StdGen -> Universe
 initUniverse g = Universe
-  { universePlatforms  = initPlatforms g
+  { universePlatforms  = absolutePlatforms (initPlatforms g)
   , universePlayer = initPlayer
   , universeScore  = 0
   , universeBackground = initBackground
   , universeGameOver = Nothing
   }
+
+-- | Создать бесконечный список платформ.
+absolutePlatforms :: [Platform] -> [Platform]
+absolutePlatforms = go 0  
+  where
+    go  _ [] = []
+    go  s ((w, o, t) : gs) = (w, s - o, t) : (go (s - o) gs)
 
 -- | Инициализировать начальное состояние игрока.
 initPlayer :: Player
@@ -29,7 +36,7 @@ initPlayer = Player
 
 -- | Инициализировать одну платформу.
 initPlatform :: Width -> Platform
-initPlatform h = (h, defaultOffset)
+initPlatform h = (h, defaultOffset, timeOfLife)
 
 -- | Инициализировать случайный бесконечный
 -- список платформ для игровой вселенной.
