@@ -32,8 +32,8 @@ data Square = Square
   }
 
 data Background = Background
-  { bgHeight1 :: Height
-  , bgHeight2 :: Height
+  { bgHeight1 :: Float
+  , bgHeight2 :: Float
   , bgSpeed :: Float
   }
 -- | Игрок.
@@ -98,6 +98,9 @@ platformHeight = 20
 -- | Расстояние между платформами.
 defaultOffset :: Offset
 defaultOffset = 200
+
+bgHeight :: Float
+bgHeight = 7900
 
 -- | Диапазон генерации платформ.
 platformWidthRange :: (Width, Width)

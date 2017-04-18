@@ -176,13 +176,13 @@ updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
 
 updateBackground :: Float -> Background -> Background
 updateBackground dt bg
-  | (bgHeight1 bg) > 700 = bg {
-  bgHeight1 = (bgHeight2 bg) - 690,
+  | (bgHeight1 bg) >= 7900 = bg {
+  bgHeight1 = -bgHeight,
   bgHeight2 = (bgHeight2 bg) + dt * (bgSpeed bg)
 }
-  | (bgHeight2 bg) > 700 = bg {
+  | (bgHeight2 bg) >= 7900 = bg {
   bgHeight1 = (bgHeight1 bg) + dt * (bgSpeed bg),
-  bgHeight2 = (bgHeight1 bg) - 690
+  bgHeight2 = -bgHeight
 }
   | otherwise = bg {
   bgHeight1 = (bgHeight1 bg) + dt * (bgSpeed bg),
