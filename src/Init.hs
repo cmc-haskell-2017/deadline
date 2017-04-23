@@ -46,10 +46,15 @@ initPlatforms g = map initPlatform
 
 initBackground :: Background
 initBackground = Background
-  { bgHeight1 = bgHeight / 2
-  , bgHeight2 = -bgHeight / 2
-  , bgSpeed = 70
+  { bgHeight1 = 7900 / 2 + 300
+  , bgHeight2 = -7900 / 2 + 300
+  , bgSpeed = 50
+  , bgSize = 7900
   }
 -- | Инициализировать конец игры.
 initGameOver :: Point
 initGameOver = (0.32, 0.32)
+
+
+
+

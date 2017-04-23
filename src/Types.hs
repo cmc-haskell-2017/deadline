@@ -3,6 +3,9 @@ import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Interface.Pure.Game
 
+-- | Время
+type Time = Float
+
 -- | Ширина. 
 type Width = Float
 
@@ -13,7 +16,7 @@ type Height = Float
 type Offset = Float
 
 -- | Жизнь платформы.
-type Life = Float
+type Life = Time
 
 -- | Платформа.
 type Platform   = (Width, Offset, Life)
@@ -35,6 +38,7 @@ data Background = Background
   { bgHeight1 :: Float
   , bgHeight2 :: Float
   , bgSpeed :: Float
+  , bgSize :: Float
   }
 -- | Игрок.
 data Player = Player
@@ -99,8 +103,6 @@ platformHeight = 20
 defaultOffset :: Offset
 defaultOffset = 200
 
-bgHeight :: Float
-bgHeight = 7900
 
 -- | Диапазон генерации платформ.
 platformWidthRange :: (Width, Width)
@@ -115,9 +117,6 @@ platformBoxes (x, y, l) = [((x - w, y), (x + w, y + h))]
     w = platformWidth / 2
     h = platformHeight
 
--- | Скорость движения игрока по вселенной (в пикселях в секунду).
-speed :: Float
-speed = 200
 
 jumpSpeed :: Float
 jumpSpeed = 480
@@ -136,4 +135,8 @@ gravity = -970
 
 -- | Время жизни платформы.
 timeOfLife :: Float
-timeOfLife = 1.0
+timeOfLife = 0.3
+
+-- | Скорость движения игрока по вселенной (в пикселях в секунду).
+speed :: Float
+speed = 200

@@ -5,7 +5,7 @@ import Draw
 import Init
 
 -- | Обновить состояние игровой вселенной.
-updateUniverse :: Float -> Universe -> Universe
+updateUniverse :: Time -> Universe -> Universe
 updateUniverse dt u
   | isGameOver u = u { universeGameOver = Just initGameOver }
   | fst (isWithPlatform dt u) = (upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)}
@@ -13,14 +13,14 @@ updateUniverse dt u
   | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)}
  
 -- | Обновление вселенной.
-upUniverse:: Float -> Universe -> Universe 
+upUniverse:: Time -> Universe -> Universe 
 upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)(universePlayer u)
       , universeScore  = (universeScore u) + dt
       , universeBackground = updateBackground dt (universeBackground u)
       }
 
 -- | Проверка на столкновение.
-isWithPlatform :: Float -> Universe -> (Bool, Bool)
+isWithPlatform :: Time -> Universe -> (Bool, Bool)
 isWithPlatform dt u = playerWithPlatform
   where
     playerWithPlatform = (collision dt (universePlayer u) (universePlatforms u))
@@ -34,7 +34,7 @@ isGameOver u = playerBelowFloor || playerBelowRoof
 
 -- | Сталкивается ли игрок с любыми из
 -- бесконечного списка ворот?
-collision :: Float -> Player -> [Platform] -> (Bool, Bool)
+collision :: Time -> Player -> [Platform] -> (Bool, Bool)
 collision _ _ [] = (False, False)
 collision dt player platforms = tupleOr (map (collides dt player) (takeWhile onScreen platforms))
   where
@@ -78,7 +78,7 @@ rotateRight square = Square {
                 }
 
 -- |  Становится ли игрок на платформу?
-collides :: Float -> Player -> Platform -> (Bool, Bool)
+collides :: Time -> Player -> Platform -> (Bool, Bool)
 collides dt player (width, offset, life) = ((collidesHelper (playerSquare player dt) (platformSquare (width, offset, life) dt)), 
   or [(collidesHelper (rotateLeft (playerSquare player dt)) (rotateLeft (platformSquare (width, offset, life) dt))), 
   (collidesHelper (rotateRight (playerSquare player dt)) (rotateRight (platformSquare (width, offset, life) dt)))])
@@ -93,7 +93,7 @@ collidesHelper player platform =
   (xCoordinateRight player > xCoordinateLeft platform)])
 
 -- | Обновление местоположения игрока по горизонтали.
-keepPlayerOnScreen :: Float -> Player -> Player 
+keepPlayerOnScreen :: Time -> Player -> Player 
 keepPlayerOnScreen dt player = player {
   playerWidth = (max (min w (playerWidth player) + dt * (playerSpeed player)) wm)
 } 
@@ -102,7 +102,7 @@ keepPlayerOnScreen dt player = player {
     wm = -200 
 
 -- | Вспомогательная функция для игрока на платформе.
-keepPlayerOnPlatform :: Float -> Player -> Player
+keepPlayerOnPlatform :: Time -> Player -> Player
 keepPlayerOnPlatform dt player = player {
    playerFallingSpeed = speed,
    playerIsOnPlatform = True,
@@ -110,7 +110,7 @@ keepPlayerOnPlatform dt player = player {
 }
 
 -- | Вспомогательная функция для игрока, столкнувшегося с платформой.
-holdPlayerOnPlatform :: Float -> Player -> Player
+holdPlayerOnPlatform :: Time -> Player -> Player
 holdPlayerOnPlatform dt player = player {
    playerSpeed = 0,
    playerIsOnPlatform = False,
@@ -119,15 +119,15 @@ holdPlayerOnPlatform dt player = player {
 }
 
 -- | Обновление игрока на платформе.
-keepPlayer :: Float -> Player-> Player
+keepPlayer :: Time -> Player-> Player
 keepPlayer dt player = keepPlayerOnScreen dt (keepPlayerOnPlatform dt player)
 
 -- | Обновление игрока, столкнувшегося с платформой.
-holdPlayer :: Float -> Player-> Player
+holdPlayer :: Time -> Player-> Player
 holdPlayer dt player = keepPlayerOnScreen dt (holdPlayerOnPlatform dt player)
 
 -- | Обновление скорости и расположения по вертикали игрока.
-movePlayer :: Float -> Player -> Player
+movePlayer :: Time -> Player -> Player
 movePlayer dt player = player {
   playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
   playerIsOnPlatform = False,
@@ -135,7 +135,7 @@ movePlayer dt player = player {
 }
 
 -- | Обновить платформы игровой вселенной.
-updatePlatforms :: Float -> [Platform] -> Player -> [Platform]
+updatePlatforms :: Time -> [Platform] -> Player -> [Platform]
 updatePlatforms _ [] _ = []
 updatePlatforms dt ((width, offset, time) : platforms) player
   | screenUp < offset = updatePlatforms dt platforms player
@@ -146,7 +146,7 @@ updatePlatforms dt ((width, offset, time) : platforms) player
         dy  = dt * speed
 
 -- | Пямоугольник игрока.
-playerSquare :: Player -> Float -> Square
+playerSquare :: Player -> Time -> Square
 playerSquare player dt = Square {
           xCoordinateLeft = (playerWidth player - widthOfPlayer),
           yCoordinateRight = (playerHeight player - heigthOfPlayer), 
@@ -160,7 +160,7 @@ playerSquare player dt = Square {
         widthOfPlayer = 800 * 0.03
 
 -- | Прямоугольник платформы.
-platformSquare :: Platform -> Float -> Square
+platformSquare :: Platform -> Time -> Square
 platformSquare (width, offset, time) dt = Square {
           xCoordinateLeft = width - platformWidth /2,
           yCoordinateRight = offset, 
@@ -171,18 +171,18 @@ platformSquare (width, offset, time) dt = Square {
 }
     
 -- | Обновление состояния игрока.
-updatePlayer :: Float -> Player -> Player
+updatePlayer :: Time -> Player -> Player
 updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
 
-updateBackground :: Float -> Background -> Background
+updateBackground :: Time -> Background -> Background
 updateBackground dt bg
-  | (bgHeight1 bg) >= 7900 = bg {
-  bgHeight1 = -bgHeight,
+  | (bgHeight1 bg) >= (bgSize bg) = bg {
+  bgHeight1 = -(bgSize bg),
   bgHeight2 = (bgHeight2 bg) + dt * (bgSpeed bg)
 }
-  | (bgHeight2 bg) >= 7900 = bg {
+  | (bgHeight2 bg) >= (bgSize bg) = bg {
   bgHeight1 = (bgHeight1 bg) + dt * (bgSpeed bg),
-  bgHeight2 = -bgHeight
+  bgHeight2 = -(bgSize bg)
 }
   | otherwise = bg {
   bgHeight1 = (bgHeight1 bg) + dt * (bgSpeed bg),
