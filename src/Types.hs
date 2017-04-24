@@ -3,6 +3,12 @@ import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Geometry.Line
 import Graphics.Gloss.Interface.Pure.Game
 
+-- | Время
+type Time = Float
+
+-- | Скорость
+type Speed = Float
+
 -- | Ширина. 
 type Width = Float
 
@@ -12,8 +18,11 @@ type Height = Float
 -- | Положение блока (по горизонтали).
 type Offset = Float
 
+-- | Жизнь платформы.
+type Life = Time
+
 -- | Платформа.
-type Platform   = (Width, Offset)
+type Platform   = (Width, Offset, Life)
 
 -- | Вектор.
 type Vector = (Int, Int)
@@ -29,9 +38,10 @@ data Square = Square
   }
 
 data Background = Background
-  { bgHeight1 :: Height
-  , bgHeight2 :: Height
+  { bgHeight1 :: Float
+  , bgHeight2 :: Float
   , bgSpeed :: Float
+  , bgSize :: Float
   }
 -- | Игрок.
 data Player = Player
@@ -39,6 +49,8 @@ data Player = Player
   , playerHeight :: Height        -- ^ Положение игрока по вертикали.
   , playerSpeed :: Float          -- ^ Скорость движения игрока по горизонтали.
   , playerFallingSpeed :: Float   -- ^ Скорость падения игрока.
+  , coefSpeed :: Float            -- ^ Коиффциент изменения скорости игрока
+  , playerIsOnPlatform :: Bool
   }
 
 
@@ -47,9 +59,9 @@ data Universe = Universe
   { universePlatforms   :: [Platform]   -- ^ Платформы игровой вселенной.
   , universePlayer  :: Player           -- ^ Игрок
   , universeScore   :: Float            -- ^ Счёт (количество пролетевших мимо платформ)
-  , universeBorders :: Int
   , universeBackground :: Background
   , universeGameOver :: Maybe Point
+  , speed :: Float
   }
 
 -- | Изображения объектов.
@@ -96,6 +108,7 @@ platformHeight = 20
 defaultOffset :: Offset
 defaultOffset = 200
 
+
 -- | Диапазон генерации платформ.
 platformWidthRange :: (Width, Width)
 platformWidthRange = (-w, w)
@@ -104,14 +117,14 @@ platformWidthRange = (-w, w)
 
 -- | Параметры платформы.
 platformBoxes :: Platform -> [(Point, Point)]
-platformBoxes (x, y) = [((x - w, y), (x + w, y + h))]
+platformBoxes (x, y, l) = [((x - w, y), (x + w, y + h))]
   where
     w = platformWidth / 2
     h = platformHeight
 
--- | Скорость движения игрока по вселенной (в пикселях в секунду).
-speed :: Float
-speed = 100
+
+jumpSpeed :: Float
+jumpSpeed = 480
 
 -- | Скорость после "подпрыгивания".
 bumpSpeed :: Float
@@ -124,3 +137,11 @@ playerOffset = screenLeft + 200
 -- | Ускорение свободного падения.
 gravity :: Float
 gravity = -970
+
+-- | Время жизни платформы.
+timeOfLife :: Float
+timeOfLife = 1.0
+
+-- | Скорость движения игрока по вселенной (в пикселях в секунду).
+--speed :: Float
+--speed = 200
