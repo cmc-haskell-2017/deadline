@@ -18,7 +18,7 @@ type Life = Float
 -- | Платформа.
 type Platform   = (Width, Offset, Life)
 
--- | Вектор. 
+-- | Вектор.
 type Vector = (Int, Int)
 
 -- | Прямоугольник (игрок или платформа).
@@ -31,12 +31,18 @@ data Square = Square
     ySpeed :: Float
   }
 
+data Background = Background
+  { bgHeight1 :: Float
+  , bgHeight2 :: Float
+  , bgSpeed :: Float
+  }
 -- | Игрок.
 data Player = Player
   { playerWidth :: Width          -- ^ Положение игрока по горизонтали.
   , playerHeight :: Height        -- ^ Положение игрока по вертикали.
   , playerSpeed :: Float          -- ^ Скорость движения игрока по горизонтали.
   , playerFallingSpeed :: Float   -- ^ Скорость падения игрока.
+  , playerIsOnPlatform :: Bool
   }
 
 
@@ -45,15 +51,61 @@ data Universe = Universe
   { universePlatforms   :: [Platform]   -- ^ Платформы игровой вселенной.
   , universePlayer  :: Player           -- ^ Игрок
   , universeScore   :: Float            -- ^ Счёт (количество пролетевших мимо платформ)
+  , universeBackground :: Background
   , universeGameOver :: Maybe Point
+  , universeCannon :: Cannon
   }
 
 -- | Изображения объектов.
 data Images = Images
   { imagePers  :: Picture   -- ^ Изображение персонажа.
-  , imageBackground  :: Picture
+  , imageBackground1  :: Picture
+  , imageBackground2  :: Picture
   , imageGameOver :: Picture
+  , imageCannon :: Picture
+  , imageBullets :: Picture
   }
+
+-- | Пушка.
+data Cannon = Cannon
+  { cannonWidth :: Width
+  , cannonRecharge :: Float
+  , cannonBullets :: [Bullet]
+  }
+
+-- | Пуля.
+data Bullet = Bullet
+  { bulletWidth :: Width
+  , bulletHeight :: Height
+  }
+
+-- |
+bulletSpeed :: Float
+bulletSpeed = 400
+
+-- | 
+cannonNormSpeed :: Float
+cannonNormSpeed = 100
+
+-- | Время перезарядки.
+timeOfRecharge :: Float
+timeOfRecharge = 0.5
+
+-- |
+heigthOfPlayer :: Float
+heigthOfPlayer = 1200 * 0.03
+
+-- |
+widthOfPlayer :: Float
+widthOfPlayer = 800 * 0.03
+
+-- | 
+bulletsWidth :: Float
+bulletsWidth = 590 * 0.01
+
+-- |
+bulletsHeight :: Float
+bulletsHeight = 297 * 0.02
 
 -- | Ширина экрана.
 screenWidth :: Int
@@ -87,9 +139,12 @@ platformWidth = 120
 platformHeight :: Float
 platformHeight = 20
 
--- | Расстояние между платформами.
+-- Расстояние между платформами.
 defaultOffset :: Offset
 defaultOffset = 200
+
+bgHeight :: Float
+bgHeight = 7900
 
 -- | Диапазон генерации платформ.
 platformWidthRange :: (Width, Width)
@@ -99,14 +154,17 @@ platformWidthRange = (-w, w)
 
 -- | Параметры платформы.
 platformBoxes :: Platform -> [(Point, Point)]
-platformBoxes (x, y, l) = [((x - w, y), (x + w, y + h))]
+platformBoxes (x, y, _) = [((x - w, y), (x + w, y + h))]
   where
     w = platformWidth / 2
     h = platformHeight
 
 -- | Скорость движения игрока по вселенной (в пикселях в секунду).
 speed :: Float
-speed = 100
+speed = 200
+
+jumpSpeed :: Float
+jumpSpeed = 480
 
 -- | Скорость после "подпрыгивания".
 bumpSpeed :: Float
@@ -122,4 +180,4 @@ gravity = -970
 
 -- | Время жизни платформы.
 timeOfLife :: Float
-timeOfLife = 0.5
+timeOfLife = 1.0

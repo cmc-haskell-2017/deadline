@@ -26,6 +26,7 @@ drawPlatform p = (pictures [ color (makeColorI 0 66 72 255) (pictures (map drawB
     drawBox3 ((l, b), (r, t)) = polygon
       [ (l, t-3), (l+3, t), (r, b+3), (r-3, b) ]
 
+
 -- | Нарисовать игрока.
 drawPlayer :: Picture -> Player -> Picture
 drawPlayer image player = translate x y (scale 0.1075 0.1075 image)
@@ -33,26 +34,18 @@ drawPlayer image player = translate x y (scale 0.1075 0.1075 image)
     (x, y) = (playerWidth player, playerHeight player)
 
 -- | Нарисовать задний фон.
-drawBackground :: Picture -> Picture
-drawBackground image = (scale 0.12 0.12 image)
+drawBackground :: Picture -> Picture -> Background -> Picture
+drawBackground bg1 bg2 bg = pictures [ (translate 1 y1 bg1), (translate 1 y2 bg2)]
+    where
+      (y1, y2) = (bgHeight1 bg, bgHeight2 bg)
 
 -- | Нарисовать границы сверху и снизу.
 drawBorders :: Picture
 drawBorders = translate (-w) h (scale 30 30 (pictures
-  [ color red (polygon [ (0, 0), (0, -2), (sw, -2), (sw, 0) ])            -- верхняя граница
-  , translate 4.5 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))  -- "deadline"
-  , translate 4.6 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
-  , translate 4.55 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
-  , translate 4.52 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
-  , translate 4.57 (-1.5) (scale 0.01 0.01 (color black (text "DEADLINE")))
-  , color red (polygon [ (0, -sh+1.5), (0, -sh-1), (sw, -sh-1), (sw, -sh+1.5) ]) -- нижняя граница
-  , translate 4.35 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion"))) -- "exhaustion"
-  , translate 4.32 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion")))
-  , translate 4.37 (-sh+0.1) (scale 0.01 0.01 (color black (text "exhaustion")))
+  [ color red (polygon [ (0, 0), (0, -2), (15, -2), (15, 0) ])            -- верхняя граница
+  , color red (polygon [ (0, -21.5), (0, -24), (15, -24), (15, -21.5) ]) -- нижняя граница
   ]))
   where
-    sw = 15 
-    sh = 23
     w = fromIntegral screenWidth / 2
     h = fromIntegral screenHeight / 2
 
@@ -61,23 +54,43 @@ drawGameOver :: Picture -> Maybe Point -> Picture
 drawGameOver _ Nothing = blank
 drawGameOver image (Just (x, y)) = (scale x y image)
 
--- | Нарисовать счёт в левом верхнем углу экрана.
-drawScore :: Float -> Picture
-drawScore score = translate (-w) h (scale 30 30 (pictures
-  [ color red (polygon [ (0, 0), (0, -2), (3, -2), (3, 0) ])            -- красный квадрат
-  , translate 1 (-1.5) (scale 0.01 0.01 (color black (text (show  (truncate score)))))  -- черный счёт
-  ]))
+-- | Нарисовать пушку.
+drawCannon :: Picture -> Cannon -> Picture
+drawCannon image cannon = translate x y (scale 0.05 0.05 image)
   where
-    w = fromIntegral screenWidth  / 2
-    h = fromIntegral screenHeight / 2
+    (x, y) = (cannonWidth cannon, -278)
+
+-- | Нарисовать пулю.
+drawBullets :: Picture -> Bullet -> Picture
+drawBullets image bullet = translate x y (scale 0.01 0.02 image)
+  where
+    (x, y) = (bulletWidth bullet, bulletHeight bullet)
+----------------------------------------------------------
+-- | Нарисрвать текст
+drawText :: Int -> Float -> Float -> String -> Picture
+drawText k w h s = translate (-sw) sh (scale 30 30 (pictures (drawTextList k w h s)))
+  where
+    sw = fromIntegral screenWidth / 2
+    sh = fromIntegral screenHeight / 2
+
+-- | Составить список текста со смещением
+drawTextList :: Int -> Float -> Float -> String -> [Picture]
+drawTextList 0 _ _ _ = []
+drawTextList k w h s = (drawTextFunc w h s) : (drawTextList (k-1) (w+0.02) (h+0.01) s) 
+
+-- | Отрисоать одно слово
+drawTextFunc :: Float -> Float -> String -> Picture
+drawTextFunc w h s = translate w (h) (scale 0.01 0.01 (color black (text s)))
 
 -- | Отобразить игровую вселенную.
 drawUniverse :: Images -> Universe -> Picture
-drawUniverse images u = pictures
-  [ drawBackground (imageBackground images)
+drawUniverse images u = pictures(
+  [ drawBackground (imageBackground1 images) (imageBackground2 images) (universeBackground u)
   , drawPlatforms  (universePlatforms u)
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
   , drawBorders
-  , drawScore  (universeScore u)
-  , drawGameOver (imageGameOver images) (universeGameOver u)
-  ]
+  , drawText 5 4.5 (-1.5) "DEADLINE"
+  , drawText 5 4.35 (-22.9) "exhaustion"
+  , drawText 5 1 (-1.5) (show (truncate (universeScore u)))
+  , drawCannon (imageCannon images) (universeCannon u)
+  ] ++ (map (drawBullets (imageBullets images)) (cannonBullets (universeCannon u))) ++ [drawGameOver (imageGameOver images) (universeGameOver u)])

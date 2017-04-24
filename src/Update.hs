@@ -3,11 +3,12 @@ module Update where
 import Types
 import Draw
 import Init
+import Cannon
 
 -- | Обновить состояние игровой вселенной.
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
-  | isGameOver u = u { universeGameOver = Just initGameOver }
+  | isGameOver dt u = u { universeGameOver = Just initGameOver }
   | fst (isWithPlatform dt u) = (upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)}
   | snd (isWithPlatform dt u) = (upUniverse dt u) {universePlayer = holdPlayer dt (universePlayer u)}
   | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)}
@@ -16,6 +17,8 @@ updateUniverse dt u
 upUniverse:: Float -> Universe -> Universe 
 upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)(universePlayer u)
       , universeScore  = (universeScore u) + dt
+      , universeBackground = updateBackground dt (universeBackground u)
+      , universeCannon = updateCannon dt u
       }
 
 -- | Проверка на столкновение.
@@ -25,11 +28,36 @@ isWithPlatform dt u = playerWithPlatform
     playerWithPlatform = (collision dt (universePlayer u) (universePlatforms u))
 
 -- | Конец игры?
-isGameOver :: Universe -> Bool
-isGameOver u = playerBelowFloor || playerBelowRoof
+isGameOver :: Float -> Universe -> Bool
+isGameOver dt u = playerBelowFloor || playerBelowRoof || (playerKilled dt u)
   where
     playerBelowRoof = playerHeight (universePlayer u) >  screenUp - 30
     playerBelowFloor = playerHeight (universePlayer u) < screenDown + 30
+
+-- | 
+playerKilled :: Float -> Universe -> Bool
+playerKilled dt u = or (map (isKilled dt player) bullets)
+  where 
+    bullets = cannonBullets (universeCannon u)
+    player = universePlayer u
+
+-- |
+isKilled :: Float -> Player -> Bullet -> Bool
+isKilled dt player bullet = or[ (collidesHelper (playerSquare player dt) (bulletSquare bullet dt))
+                              , (collidesHelper (rotateLeft (playerSquare player dt)) (rotateLeft (bulletSquare bullet dt)))
+                              , (collidesHelper (rotateRight (playerSquare player dt)) (rotateRight (bulletSquare bullet dt)))
+                              , (collidesHelper (bulletSquare bullet dt) (playerSquare player dt))]
+
+-- |
+bulletSquare :: Bullet -> Float -> Square
+bulletSquare bullet dt = Square {
+          xCoordinateLeft = (bulletWidth bullet) - bulletsWidth /2,
+          yCoordinateRight = bulletHeight bullet - bulletsHeight/2, 
+          xCoordinateRight = (bulletWidth bullet) + bulletsWidth /2,
+          yCoordinateLeft = (bulletHeight bullet) + bulletsHeight/2, 
+          xSpeed = 0,
+          ySpeed = bulletSpeed * dt
+}
 
 -- | Сталкивается ли игрок с любыми из
 -- бесконечного списка ворот?
@@ -37,7 +65,7 @@ collision :: Float -> Player -> [Platform] -> (Bool, Bool)
 collision _ _ [] = (False, False)
 collision dt player platforms = tupleOr (map (collides dt player) (takeWhile onScreen platforms))
   where
-    onScreen (_, offset,_) = offset - platformHeight > screenDown
+    onScreen (_, offset, _) = offset - platformHeight > screenDown
 
 -- | Проверка на столкновение свреху.
 tupleOrFirst :: [(Bool, Bool)] -> Bool
@@ -104,6 +132,7 @@ keepPlayerOnScreen dt player = player {
 keepPlayerOnPlatform :: Float -> Player -> Player
 keepPlayerOnPlatform dt player = player {
    playerFallingSpeed = speed,
+   playerIsOnPlatform = True,
    playerHeight = playerHeight player + dt * speed
 }
 
@@ -111,8 +140,9 @@ keepPlayerOnPlatform dt player = player {
 holdPlayerOnPlatform :: Float -> Player -> Player
 holdPlayerOnPlatform dt player = player {
    playerSpeed = 0,
+   playerIsOnPlatform = False,
    playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
-   playerHeight = (playerHeight player) + dt * ((playerFallingSpeed player) + dt * dt * (gravity / 2))
+   playerHeight = (playerHeight player) + dt * ((playerFallingSpeed player) + dt * (gravity / 2))
 }
 
 -- | Обновление игрока на платформе.
@@ -127,7 +157,8 @@ holdPlayer dt player = keepPlayerOnScreen dt (holdPlayerOnPlatform dt player)
 movePlayer :: Float -> Player -> Player
 movePlayer dt player = player {
   playerFallingSpeed = (playerFallingSpeed player) + dt * gravity,
-  playerHeight = (playerHeight player) + dt * ((playerFallingSpeed player) + dt* dt * (gravity / 2))
+  playerIsOnPlatform = False,
+  playerHeight = (playerHeight player) + dt * ((playerFallingSpeed player) + dt * (gravity / 2))
 }
 
 -- | Обновить платформы игровой вселенной.
@@ -151,9 +182,6 @@ playerSquare player dt = Square {
           xSpeed = dt * (playerSpeed player),
           ySpeed = dt * (playerFallingSpeed player)
 }
-  where
-        heigthOfPlayer = 1200 * 0.03
-        widthOfPlayer = 800 * 0.03
 
 -- | Прямоугольник платформы.
 platformSquare :: Platform -> Float -> Square
@@ -169,3 +197,18 @@ platformSquare (width, offset, time) dt = Square {
 -- | Обновление состояния игрока.
 updatePlayer :: Float -> Player -> Player
 updatePlayer dt player = (keepPlayerOnScreen dt (movePlayer dt player))
+
+updateBackground :: Float -> Background -> Background
+updateBackground dt bg
+  | (bgHeight1 bg) >= 7900 = bg {
+  bgHeight1 = -bgHeight,
+  bgHeight2 = (bgHeight2 bg) + dt * (bgSpeed bg)
+}
+  | (bgHeight2 bg) >= 7900 = bg {
+  bgHeight1 = (bgHeight1 bg) + dt * (bgSpeed bg),
+  bgHeight2 = -bgHeight
+}
+  | otherwise = bg {
+  bgHeight1 = (bgHeight1 bg) + dt * (bgSpeed bg),
+  bgHeight2 = (bgHeight2 bg) + dt * (bgSpeed bg)
+}

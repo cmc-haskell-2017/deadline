@@ -13,7 +13,9 @@ initUniverse g = Universe
   { universePlatforms  = absolutePlatforms (initPlatforms g)
   , universePlayer = initPlayer
   , universeScore  = 0
+  , universeBackground = initBackground
   , universeGameOver = Nothing
+  , universeCannon = initCannon
   }
 
 -- | Создать бесконечный список платформ.
@@ -29,6 +31,7 @@ initPlayer = Player
   { playerHeight = 300
   , playerWidth = 0
   , playerSpeed = 0
+  , playerIsOnPlatform = False
   , playerFallingSpeed  = 0
   }
 
@@ -42,6 +45,20 @@ initPlatforms :: StdGen -> [Platform]
 initPlatforms g = map initPlatform
   (randomRs platformWidthRange g)
 
+initBackground :: Background
+initBackground = Background
+  { bgHeight1 = bgHeight / 2
+  , bgHeight2 = -bgHeight / 2
+  , bgSpeed = 70
+  }
 -- | Инициализировать конец игры.
 initGameOver :: Point
 initGameOver = (0.32, 0.32)
+
+-- | Инициализировать пушку.
+initCannon :: Cannon
+initCannon = Cannon
+  { cannonWidth = 0
+  , cannonRecharge = 0
+  , cannonBullets = []
+  }

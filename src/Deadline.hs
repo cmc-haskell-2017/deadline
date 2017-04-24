@@ -8,6 +8,8 @@ import Draw
 import Init
 import Handle
 import Update
+import Cannon
+--import Graphics.Image.Processing
 
 -- | Запустить игру «Deadline».
 runDeadline :: Images -> IO ()
@@ -23,11 +25,15 @@ runDeadline images = do
 loadImages :: IO Images
 loadImages = do
   Just pers   <- loadJuicyPNG "src/person.png"
-  Just bgrd   <- loadJuicyPNG "src/background.png"
+  Just bgrd   <- loadJuicyPNG "src/bg.png"
   Just gover  <- loadJuicyPNG "src/gameover.png"
+  Just cannon  <- loadJuicyPNG "src/cannon.png"
+  Just bullets <- loadJuicyPNG "src/bullet.png"
   return Images
     { imagePers   = scale 3 3 pers
-    , imageBackground = scale 3 3 bgrd 
+    , imageBackground1 =  bgrd 
+    , imageBackground2 =  bgrd 
     , imageGameOver = scale 3 3 gover
+    , imageCannon = scale 3 3 cannon
+    , imageBullets = scale 3 3 bullets
     }
-
