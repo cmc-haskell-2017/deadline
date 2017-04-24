@@ -15,7 +15,7 @@ updateUniverse dt u
  
 -- | Обновление вселенной.
 upUniverse:: Float -> Universe -> Universe 
-upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)(universePlayer u)
+upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u) u
       , universeScore  = (universeScore u) + dt
       , universeBackground = updateBackground dt (universeBackground u)
       , universeCannon = updateCannon dt u
@@ -33,6 +33,56 @@ isGameOver dt u = playerBelowFloor || playerBelowRoof || (playerKilled dt u)
   where
     playerBelowRoof = playerHeight (universePlayer u) >  screenUp - 30
     playerBelowFloor = playerHeight (universePlayer u) < screenDown + 30
+
+-- | 
+updateCannon :: Float -> Universe -> Cannon
+updateCannon dt u | under = cannonShot dt u
+                  | left = cannonShift dt cannonNormSpeed u
+                  | right = cannonShift dt (-cannonNormSpeed) u
+  where 
+    (under, left, right) = whereCannon u
+
+-- |
+whereCannon :: Universe -> (Bool, Bool, Bool)
+whereCannon u = (
+  and 
+    [ playerLeft < cannon
+    , playerRight > cannon],
+  playerLeft > cannon,
+  playerRight < cannon)
+  where
+    playerLeft = playerWidth (universePlayer u) - widthOfPlayer/2
+    playerRight = playerWidth (universePlayer u) + widthOfPlayer/2
+    cannon = cannonWidth (universeCannon u)
+
+-- |
+cannonShot :: Float -> Universe -> Cannon
+cannonShot dt u 
+  | ((cannonRecharge cannon) >= timeOfRecharge) = Cannon
+  { cannonWidth = (cannonWidth cannon)
+  , cannonRecharge = 0
+  , cannonBullets = updateBullets dt u (bullet : cannonBullets cannon)
+}
+                
+  | otherwise = Cannon
+  { cannonWidth = (cannonWidth cannon)
+  , cannonRecharge = (cannonRecharge cannon) + dt
+  , cannonBullets = updateBullets dt u (cannonBullets cannon)
+}
+  where 
+    cannon = universeCannon u
+    bullet = Bullet { bulletWidth = cannonWidth (universeCannon u)
+  , bulletHeight = - 270}
+
+-- | 
+cannonShift :: Float -> Float -> Universe -> Cannon
+cannonShift dt speed u = Cannon
+  { cannonWidth = (cannonWidth cannon) + dt*speed
+  , cannonRecharge = (cannonRecharge cannon) + dt
+  , cannonBullets = updateBullets dt u (cannonBullets cannon)
+}
+  where
+    cannon = universeCannon u
 
 -- | 
 playerKilled :: Float -> Universe -> Bool
@@ -58,6 +108,26 @@ bulletSquare bullet dt = Square {
           xSpeed = 0,
           ySpeed = bulletSpeed * dt
 }
+
+-- | 
+updateBullets :: Float -> Universe -> [Bullet] -> [Bullet]
+updateBullets _ _ [] = []
+updateBullets dt u (bullet : bullets) 
+  | screenUp < (bulletHeight bullet) = updateBullets dt u bullets
+  | killPlatforms dt (universePlatforms u) bullet = updateBullets dt u bullets
+  | otherwise = (Bullet { bulletWidth = (bulletWidth bullet) , bulletHeight = (bulletHeight bullet) + dt*bulletSpeed}) : (updateBullets dt u bullets)
+
+-- |
+killPlatforms :: Float -> [Platform] -> Bullet -> Bool
+killPlatforms _ [] _ = False
+killPlatforms dt ((width, offset, time) : platforms) bullet 
+  | screenDown > offset = False
+  | otherwise = or [(killPlatform dt bullet (width, offset, time)), (killPlatforms dt platforms bullet)]
+
+-- |
+killPlatform :: Float -> Bullet -> Platform -> Bool
+killPlatform dt bullet platform = collidesHelper (platformSquare platform dt) (bulletSquare bullet dt)
+
 
 -- | Сталкивается ли игрок с любыми из
 -- бесконечного списка ворот?
@@ -162,15 +232,21 @@ movePlayer dt player = player {
 }
 
 -- | Обновить платформы игровой вселенной.
-updatePlatforms :: Float -> [Platform] -> Player -> [Platform]
-updatePlatforms _ [] _ = []
-updatePlatforms dt ((width, offset, time) : platforms) player
-  | screenUp < offset = updatePlatforms dt platforms player
-  | time - dt < 0 = updatePlatforms dt platforms player
-  | collidesHelper (playerSquare player dt) (platformSquare (width, offset, time) dt) = (width, offset + dy, time - dt) : (updatePlatforms dt platforms player)
-  | otherwise = (width, offset + dy, time) : (updatePlatforms dt platforms player)
+updatePlatforms :: Float -> [Platform] -> Universe -> [Platform]
+updatePlatforms _ [] _  = []
+updatePlatforms dt ((width, offset, time) : platforms) u 
+  | screenUp < offset = updatePlatforms dt platforms u
+  | isKilledPlatform dt u (width, offset, time) = updatePlatforms dt platforms u
+  | time - dt < 0 = updatePlatforms dt platforms u
+  | collidesHelper (playerSquare player dt) (platformSquare (width, offset, time) dt) = (width, offset + dy, time - dt) : (updatePlatforms dt platforms u)
+  | otherwise = (width, offset + dy, time) : (updatePlatforms dt platforms u)
   where
+        player = universePlayer u
         dy  = dt * speed
+
+-- | 
+isKilledPlatform :: Float -> Universe -> Platform -> Bool
+isKilledPlatform dt u platform = or (map (\bullet -> killPlatform dt bullet platform) (cannonBullets (universeCannon u)))
 
 -- | Пямоугольник игрока.
 playerSquare :: Player -> Float -> Square
