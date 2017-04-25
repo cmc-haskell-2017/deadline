@@ -3,3 +3,5 @@ packages:
 - '.'
 extra-deps:
 - gloss-juicy-0.2.2
+- sqlite-simple-0.4.13.0
+- text-1.2.2.1

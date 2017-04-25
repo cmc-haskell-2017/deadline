@@ -1,8 +1,10 @@
 module Main where
 
 import Deadline
+import Database
 
 main :: IO ()
 main = do
-	images <- loadImages
- 	runDeadline images
+  testDb 111
+  images <- loadImages
+  runDeadline images
