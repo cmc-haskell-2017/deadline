@@ -15,14 +15,40 @@ instance FromRow Player where
 instance ToRow Player where
   toRow (Player playerId playerName score) = toRow (playerId, playerName, score)
 
-setPlayerRecord :: Int -> IO ()
-setPlayerRecord score = do
+setPlayerRecord :: String -> Int -> IO ()
+setPlayerRecord name score = do
   conn <- open "players.db"
   execute_ conn "CREATE TABLE IF NOT EXISTS players (playerId INTEGER PRIMARY KEY, playerName TEXT, score INTEGER)"
-  execute conn "INSERT INTO players (playerId, playerName, score) VALUES (?, ?, ?)" (Player 1 "john" score)
-  r <- query_ conn "SELECT * from players" :: IO [Player]
-  print r
-  execute_ conn "DELETE FROM players WHERE playerId = 1"
+  rowId <- lastInsertRowId conn
+  execute conn "INSERT INTO players (playerId, playerName, score) VALUES (?, ?, ?)" (Player (fromIntegral rowId) (T.pack name) score)
   close conn
+
+getScore :: Player -> Int  
+getScore (Player _ _ score) = score  
+
+getPlayerName :: Player -> String  
+getPlayerName (Player _ name _) = T.unpack name  
+
+getPlayerRecord :: String -> IO [Player]
+getPlayerRecord playerName = do
+  conn <- open "players.db"
+  r <- queryNamed conn "SELECT * from players WHERE playerName = :playerName" [":playerName" := (T.pack playerName)] :: IO [Player]
+  close conn
+  return r
+
+getRanking :: IO [Player]
+getRanking = do
+  conn <- open "players.db"
+  r <- query_ conn "SELECT * from players ORDER BY score" :: IO [Player]
+  close conn
+  return r
+
+removePlayerRecord :: String -> IO ()
+removePlayerRecord name = do
+  conn <- open "players.db"
+  execute conn "DELETE from players WHERE playerName = ?" (Only name)
+  close conn
+  
  -- rowId <- lastInsertRowId conn
- -- executeNamed conn "UPDATE test SET str = :str WHERE id = :id" [":str" := ("updated str" :: T.Text), ":id" := rowId]]
+ -- executeNamed conn "UPDATE test SET str = :str WHERE id = :id" [":str" := ("updated str" :: T.Text), ":id" := rowId]
+-- Record {score = (getScore (r !! 0)), name = playerName}
