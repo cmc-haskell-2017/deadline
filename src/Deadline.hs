@@ -1,7 +1,7 @@
 module Deadline where
 
 import System.Random
-import Graphics.Gloss.Interface.Pure.Game
+import Graphics.Gloss.Interface.IO.Game
 import Graphics.Gloss.Juicy
 import Types
 import Draw
@@ -10,10 +10,11 @@ import Handle
 import Update
 
 -- | Запустить игру «Deadline».
-runDeadline :: Images -> IO ()
-runDeadline images = do
+runDeadline :: Images -> String -> IO ()
+runDeadline images name = do
   g <- newStdGen
-  play display bgColor fps (initUniverse g) (drawUniverse images) handleUniverse updateUniverse
+  universe <- (pure (initUniverse g name))
+  playIO display bgColor fps universe (drawUniverse images) handleUniverse updateUniverse
   where
     display = InWindow "DEADLINE" (screenWidth, screenHeight) (200, 200)
     bgColor = white   -- цвет фона

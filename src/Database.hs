@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- it's John Kim's code. Do never think to copy / paste :)
+
 module Database where
 
 import           Control.Applicative
@@ -21,6 +23,12 @@ setPlayerRecord name score = do
   execute_ conn "CREATE TABLE IF NOT EXISTS players (playerId INTEGER PRIMARY KEY, playerName TEXT, score INTEGER)"
   rowId <- lastInsertRowId conn
   execute conn "INSERT INTO players (playerId, playerName, score) VALUES (?, ?, ?)" (Player (fromIntegral rowId) (T.pack name) score)
+  close conn
+
+updatePlayerRecord :: String -> Int -> IO ()
+updatePlayerRecord name score = do
+  conn <- open "players.db"
+  executeNamed conn "UPDATE players SET score = :score WHERE playerName = :playerName" [":score" := score, ":playerName" := (T.pack name)]
   close conn
 
 getScore :: Player -> Int  

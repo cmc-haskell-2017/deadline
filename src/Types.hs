@@ -53,6 +53,7 @@ data Universe = Universe
   , universeScore   :: Float            -- ^ Счёт (количество пролетевших мимо платформ)
   , universeBackground :: Background
   , universeGameOver :: Maybe Point
+  , name :: String
   }
 
 -- | Изображения объектов.

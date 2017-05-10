@@ -71,8 +71,8 @@ drawTextFunc :: Float -> Float -> String -> Picture
 drawTextFunc w h s = translate w (h) (scale 0.01 0.01 (color black (text s)))
 
 -- | Отобразить игровую вселенную.
-drawUniverse :: Images -> Universe -> Picture
-drawUniverse images u = pictures
+drawUniverse :: Images -> Universe -> IO Picture
+drawUniverse images u = pure (pictures
   [ drawBackground (imageBackground1 images) (imageBackground2 images) (universeBackground u)
   , drawPlatforms  (universePlatforms u)
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
@@ -81,4 +81,4 @@ drawUniverse images u = pictures
   , drawText 5 4.35 (-22.9) "exhaustion"
   , drawText 5 1 (-1.5) (show (truncate (universeScore u)))
   , drawGameOver (imageGameOver images) (universeGameOver u)
-  ]
+  ])

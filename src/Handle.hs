@@ -8,6 +8,7 @@ import Graphics.Gloss.Juicy
 import Types
 import Init
 import Update
+import Database
 
 -- | Сдвинуть игрока влево.
 bumpPlayerLeft :: Universe -> Universe
@@ -50,13 +51,18 @@ firstOfTuple :: Platform -> Int
 firstOfTuple (x, y, z) = truncate x
 
 -- | Обработчик событий игры.
-handleUniverse :: Event -> Universe -> Universe
-handleUniverse (EventKey (SpecialKey KeyLeft) Down _ _) u = bumpPlayerLeft u
+handleUniverse :: Event -> Universe -> IO Universe
+handleUniverse (EventKey (SpecialKey KeyLeft) Down _ _) u = pure (bumpPlayerLeft u)
 handleUniverse (EventKey (SpecialKey KeyUp) Down _ _) u
-   | (playerIsOnPlatform (universePlayer u)) = bumpPlayerUp u
-   | otherwise = u
-handleUniverse (EventKey (SpecialKey KeyRight) Down _ _) u = bumpPlayerRight u
-handleUniverse (EventKey (SpecialKey KeyLeft) Up _ _) u = stopPlayer u
-handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = stopPlayer u
-handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u  = initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u))))
-handleUniverse _ u = u
+   | (playerIsOnPlatform (universePlayer u)) = pure (bumpPlayerUp u)
+   | otherwise = pure u
+handleUniverse (EventKey (SpecialKey KeyRight) Down _ _) u = pure (bumpPlayerRight u)
+handleUniverse (EventKey (SpecialKey KeyLeft) Up _ _) u = pure (stopPlayer u)
+handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = pure (stopPlayer u)
+handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u  = do 
+  updatePlayerRecord ((name) u) (truncate ((universeScore) u))
+  record <- getPlayerRecord ((name) u)
+  print (record !! 0)
+  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) ((name) u)))
+  return universeReturn
+handleUniverse _ u = pure u

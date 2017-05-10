@@ -8,13 +8,14 @@ import Graphics.Gloss.Juicy
 import Types
 
 -- | Инициализировать игровую вселенную.
-initUniverse :: StdGen -> Universe
-initUniverse g = Universe
+initUniverse :: StdGen -> String -> Universe
+initUniverse g gameName = Universe
   { universePlatforms  = absolutePlatforms (initPlatforms g)
   , universePlayer = initPlayer
   , universeScore  = 0
   , universeBackground = initBackground
   , universeGameOver = Nothing
+  , name = gameName
   }
 
 -- | Создать бесконечный список платформ.

@@ -5,12 +5,12 @@ import Draw
 import Init
 
 -- | Обновить состояние игровой вселенной.
-updateUniverse :: Float -> Universe -> Universe
+updateUniverse :: Float -> Universe -> IO Universe
 updateUniverse dt u
-  | isGameOver u = u { universeGameOver = Just initGameOver }
-  | fst (isWithPlatform dt u) = (upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)}
-  | snd (isWithPlatform dt u) = (upUniverse dt u) {universePlayer = holdPlayer dt (universePlayer u)}
-  | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)}
+  | isGameOver u = pure (u { universeGameOver = Just initGameOver })
+  | fst (isWithPlatform dt u) = pure ((upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)})
+  | snd (isWithPlatform dt u) = pure ((upUniverse dt u) {universePlayer = holdPlayer dt (universePlayer u)})
+  | otherwise = pure ((upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)})
  
 -- | Обновление вселенной.
 upUniverse:: Float -> Universe -> Universe 

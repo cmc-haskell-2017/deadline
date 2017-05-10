@@ -2,12 +2,11 @@ module Main where
 
 import Deadline
 import Database
+import Types
 
 main :: IO ()
 main = do
-  setPlayerRecord "john" 111
-  record <- getPlayerRecord "john"
-  print (getPlayerName (record !! 0)) --score must be used
-  print (getScore (record !! 0)) --score must be used
+  name <- getLine
+  setPlayerRecord name 0
   images <- loadImages
-  runDeadline images
+  runDeadline images name
