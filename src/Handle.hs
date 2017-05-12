@@ -50,6 +50,13 @@ stopPlayer u = u
 firstOfTuple :: Platform -> Int
 firstOfTuple (x, y, z) = truncate x
 
+printPlayers :: [Database.Player] -> IO ()
+printPlayers (player : []) = do 
+  print player
+printPlayers (player : ps) = do 
+  print player
+  printPlayers ps
+
 -- | Обработчик событий игры.
 handleUniverse :: Event -> Universe -> IO Universe
 handleUniverse (EventKey (SpecialKey KeyLeft) Down _ _) u = pure (bumpPlayerLeft u)
@@ -60,9 +67,11 @@ handleUniverse (EventKey (SpecialKey KeyRight) Down _ _) u = pure (bumpPlayerRig
 handleUniverse (EventKey (SpecialKey KeyLeft) Up _ _) u = pure (stopPlayer u)
 handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = pure (stopPlayer u)
 handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u  = do 
-  updatePlayerRecord ((name) u) (truncate ((universeScore) u))
-  record <- getPlayerRecord ((name) u)
-  print (record !! 0)
-  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) ((name) u)))
+  updatePlayerRecord ((gameId) u) (truncate ((universeScore) u))
+  --record <- getPlayerRecord ((gameId) u)
+  --print (record !! 0)
+  record <- getRanking
+  printPlayers record
+  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) ((name) u) ((gameId) u)))
   return universeReturn
 handleUniverse _ u = pure u

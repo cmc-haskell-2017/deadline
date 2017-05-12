@@ -7,6 +7,6 @@ import Types
 main :: IO ()
 main = do
   name <- getLine
-  setPlayerRecord name 0
+  id <- (setPlayerRecord name 0)
   images <- loadImages
-  runDeadline images name
+  runDeadline images name id

@@ -54,6 +54,7 @@ data Universe = Universe
   , universeBackground :: Background
   , universeGameOver :: Maybe Point
   , name :: String
+  , gameId :: Int
   }
 
 -- | Изображения объектов.
