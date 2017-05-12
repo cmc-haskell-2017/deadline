@@ -16,6 +16,7 @@ updateUniverse dt u
   | isWithBonus dt u (universeBonusSpeed u) = (upUniverse dt u) {universePlayer = updatePlayer dt (giveSpeed (universePlayer u))}
   | isWithBonus dt u (universeBonusStar u) = (upUniverse dt u) {universeScore = (universeScore u) + starBonusScore}
   | otherwise = (upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)}
+
 -- | Обновление вселенной.
 upUniverse:: Time -> Universe -> Universe 
 upUniverse dt u = u { universePlatforms  = updatePlatforms  dt (universePlatforms  u)(universePlayer u)
@@ -35,28 +36,34 @@ oinb :: (Bool, Bool) -> Bool
 oinb (False, False) = False
 oinb (_, _) = True
 
+-- Персонаж получает бонус бутылки
 giveBottle :: Player -> Player
 giveBottle player = player {bonusBottleInt = (True, timeOfBonus)}
 
+-- Персонаж получает бонус кофе
 giveCoffee :: Player -> Player
 giveCoffee player = player {bonusCoffeeInt = (True, timeOfBonus)}
 
+-- Персонаж получает бонус энергетик
 giveRedBull :: Player -> Player
 giveRedBull player = player {bonusRedBullInt = (True, timeOfBonus)}
 
+-- Персонаж получает бонус скорости
 giveSpeed :: Player -> Player
 giveSpeed player = player {bonusSpeedInt = (True, timeOfBonus)}
 
+-- Проверка на столкновение с бонусов
 isWithBonus :: Time -> Universe -> [Bonus] -> Bool
 isWithBonus dt u b = oinb (collisionBonuses dt (universePlayer u) b)
 
+-- Сталкивается ли персонаж с бонусами
 collisionBonuses :: Time -> Player -> [Bonus] -> (Bool, Bool)
 collisionBonuses _ _ [] = (False, False)
 collisionBonuses dt player bonus = tupleOr (map (collidesBonus dt player) (takeWhile onScreen bonus))
   where
     onScreen (_, offset) = offset - bonusSize > screenDown
 
--- |  Становится ли игрок на платформу?
+-- |  Сталкивается ли персонаж с бонусом
 collidesBonus :: Time -> Player -> Bonus -> (Bool, Bool)
 collidesBonus dt player (width, offset) = ((collidesBonusHelper (playerSquare player dt) (bonusSquare (width, offset) dt)), 
   or [(collidesBonusHelper (rotateLeft (playerSquare player dt)) (rotateLeft (bonusSquare (width, offset) dt))), 
@@ -82,7 +89,7 @@ collidesBonusHelper player bonus =
   (xCoordinateLeft player < xCoordinateRight bonus), 
   (xCoordinateRight player > xCoordinateLeft bonus)])
 
--- | Обновить бутылки игровой вселенной.
+-- | Обновить бонусы игровой вселенной.
 updateBonus :: Time -> [Bonus] -> Player -> [Bonus]
 updateBonus _ [] _ = []
 updateBonus dt ((width, offset) : bonus) player
@@ -92,6 +99,7 @@ updateBonus dt ((width, offset) : bonus) player
   where
         dy  = dt * speedOfBonus
 
+-- Обновить время действий бонусов
 updatePlayerBonusTime :: Time -> Player -> Player
 updatePlayerBonusTime dt player = player {
     bonusBottleInt = (upd (bonusBottleInt player) dt),
@@ -100,6 +108,7 @@ updatePlayerBonusTime dt player = player {
     bonusCoffeeInt = (upd (bonusCoffeeInt player) dt)
 }
 
+-- Обновить время действия бонуса
 upd :: PlayerBonus -> Time -> PlayerBonus
 upd (False, _) _ = (False, 0)
 upd (True, time) dt 
@@ -248,6 +257,7 @@ updatePlatforms dt ((width, offset, time) : platforms) player
   where
         dy = speedBonusCheck dt player
 
+-- Проверка на бонус скорости
 speedBonusCheck :: Time -> Player -> Offset
 speedBonusCheck dt player 
         | fst (bonusSpeedInt player) = dt * speed / 2

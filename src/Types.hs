@@ -30,8 +30,6 @@ type Bonus = (Width, Offset)
 
 type PlayerBonus = (Bool, Time)
 
--- ---------------------
-
 -- | Прямоугольник (игрок или платформа).
 data Square = Square
   { xCoordinateLeft :: Float,
@@ -127,27 +125,35 @@ defaultOffset = 200
 
 --------------------------------
 
+-- Размер бонусов
 bonusSize :: Float
 bonusSize = 40
 
+-- Расстояние между бутылками
 bottlesOffset :: Offset
 bottlesOffset = 4901
 
+-- Расстояние между кофе
 coffeeOffset :: Offset
 coffeeOffset = 7312
 
+-- Расстояние между энергетиками
 redBullOffset :: Offset
 redBullOffset = 3624
 
+-- Расстояние между ускорениями
 speedOffset  :: Offset
 speedOffset  = 5678
 
+-- Расстояние между звёздами
 starsOffset :: Offset
-starsOffset = 4124
+starsOffset = 4000
 
+-- Кол-во бонусных очков от звезды
 starBonusScore :: Float
 starBonusScore = 50
 
+-- Скорость бонусов
 speedOfBonus :: Float
 speedOfBonus = 200
 
@@ -162,6 +168,9 @@ platformWidthRange :: (Width, Width)
 platformWidthRange = (-w, w)
   where
     w = (fromIntegral screenWidth - platformWidth) / 2
+
+pWR :: Width
+pWR = (fromIntegral screenWidth - platformWidth) / 2
 
 -- | Параметры платформы.
 platformBoxes :: Platform -> [(Point, Point)]
@@ -192,3 +201,8 @@ timeOfLife = 3
 -- | Скорость движения игрока по вселенной (в пикселях в секунду).
 speed :: Float
 speed = 250
+
+-- Среднеквадратичное отклонение
+sigma :: Float
+sigma = 0.5
+

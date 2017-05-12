@@ -31,15 +31,22 @@ absoluteBonuses = go 0
     go  _ [] = []
     go  s ((w, o) : gs) = (w, s - o) : (go (s - o) gs)
 
+-- Инициализировать один бонус
 initBonus :: (Width, Offset) -> Bonus
-initBonus (w, o) = (w, o)
+initBonus (w, o) = (w, o + o*(getNormDist ((sqrt(w*w)) / pWR)))
 
+-- Инициализировать список бонусов
 initBonuses :: StdGen -> Offset -> [Bonus]
-initBonuses g o = map initBonus (prep (randomRs platformWidthRange g) o)
+initBonuses g o = map initBonus (prep (randomRs platformWidthRange g)  o)
 
+-- Создать список пар
 prep :: [Width] -> Offset -> [(Width, Offset)]
 prep [] _ = []
-prep (w:ws) o = (w, o): (prep ws o)
+prep (w:ws) o = (w, o) : (prep ws o)
+
+--getNormDist x = (1 / (sigma * (sqrt (2 * pi))))*(exp((-x*x)/(2*sigma*sigma)))
+getNormDist :: Float -> Offset
+getNormDist x = (2*sigma*sigma*(log(x*sigma*(sqrt (2 * pi)))))
 
 ---------------------------------------
 

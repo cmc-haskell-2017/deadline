@@ -71,15 +71,17 @@ drawTextFunc w h s = translate w (h) (scale 0.01 0.01 (color black (text s)))
 
 ---------------------------------------------
 
+-- Нарисовать бонус
 drawBonus :: Picture -> Bonus -> Picture
 drawBonus p (w, h) = translate w h (scale 1 1 p)
 
--- | Отобразить все бутылки игровой вселенной, вмещающиеся в экран.
+-- | Отобразить все бонусы игровой вселенной, вмещающиеся в экран.
 drawBonuses :: [Bonus] -> Picture -> Picture
 drawBonuses b i = (pictures (map (drawBonus i) (takeWhile onScreen b)))
   where
     onScreen (_, offset) = offset - platformHeight > screenDown
 
+-- Показать действующие бонусы
 drawBonusInt :: Float -> Float -> Picture -> PlayerBonus -> Picture
 drawBonusInt _ _ _ (False, _) = blank
 drawBonusInt w h i (True, _) = translate (sw-w) (sh-h) (scale 1 1 i)

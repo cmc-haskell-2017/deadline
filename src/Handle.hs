@@ -31,7 +31,7 @@ stopPlayer u = u
 firstOfTuple :: Platform -> Int
 firstOfTuple (x, _, _) = truncate x
 
--- | Сдвинуть игрока влево.
+-- | Сдвинуть игрока вправо/влево.
 bumpPlayerLR :: Int -> Universe -> (Bool, Time) -> Universe
 bumpPlayerLR 1 u (False, _) = u
   { universePlayer = bump (universePlayer u)}
@@ -63,7 +63,6 @@ handleUniverse (EventKey (SpecialKey KeyLeft) Down _ _) u = bumpPlayerLR 0 u (bo
 handleUniverse (EventKey (SpecialKey KeyRight) Down _ _) u = bumpPlayerLR 1 u (bonusCoffeeInt(universePlayer u))
 handleUniverse (EventKey (SpecialKey KeyLeft) Up _ _) u = stopPlayer u
 handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = stopPlayer u
-
 handleUniverse (EventKey (SpecialKey KeyUp) Down _ _) u
    | (fst (bonusRedBullInt (universePlayer u))) = (playerFly u 1 1)
    | (playerIsOnPlatform (universePlayer u)) = bumpPlayerUp u
@@ -80,6 +79,7 @@ handleUniverse (EventKey (SpecialKey KeyDown) Up _ _) u
 handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u  = initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u))))
 handleUniverse _ u = u
 
+-- Управление вверх-вниз
 playerFly :: Universe -> Int -> Int -> Universe
 playerFly u 1 1 = u {universePlayer = (playerFlyUp (universePlayer u))}
   where
