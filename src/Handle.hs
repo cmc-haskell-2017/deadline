@@ -50,7 +50,7 @@ stopPlayer u = u
 firstOfTuple :: Platform -> Int
 firstOfTuple (x, y, z) = truncate x
 
-printPlayers :: [Database.Player] -> IO ()
+printPlayers :: [GameDb] -> IO ()
 printPlayers (player : []) = do 
   print player
 printPlayers (player : ps) = do 
@@ -67,11 +67,8 @@ handleUniverse (EventKey (SpecialKey KeyRight) Down _ _) u = pure (bumpPlayerRig
 handleUniverse (EventKey (SpecialKey KeyLeft) Up _ _) u = pure (stopPlayer u)
 handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = pure (stopPlayer u)
 handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u  = do 
-  updatePlayerRecord ((gameId) u) (truncate ((universeScore) u))
-  --record <- getPlayerRecord ((gameId) u)
-  --print (record !! 0)
   record <- getRanking
   printPlayers record
-  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) ((name) u) ((gameId) u)))
+  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) (name u) (gameId u) (maxScore u)))
   return universeReturn
 handleUniverse _ u = pure u

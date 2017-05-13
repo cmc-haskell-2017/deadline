@@ -3,11 +3,15 @@ module Update where
 import Types
 import Draw
 import Init
+import Database
 
 -- | Обновить состояние игровой вселенной.
 updateUniverse :: Float -> Universe -> IO Universe
 updateUniverse dt u
-  | isGameOver u = pure (u { universeGameOver = Just initGameOver })
+  | isGameOver u = do 
+    updatePlayerRecord ((gameId) u) (truncate ((universeScore) u)) (maxScore u)
+    universeReturn <- (pure (u { universeGameOver = Just initGameOver }))
+    return universeReturn
   | fst (isWithPlatform dt u) = pure ((upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)})
   | snd (isWithPlatform dt u) = pure ((upUniverse dt u) {universePlayer = holdPlayer dt (universePlayer u)})
   | otherwise = pure ((upUniverse dt u) {universePlayer = updatePlayer dt (universePlayer u)})

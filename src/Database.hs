@@ -8,72 +8,95 @@ import           Control.Applicative
 import qualified Data.Text as T
 import           Database.SQLite.Simple
 import           Database.SQLite.Simple.FromRow
+import           Control.Monad
 
-data Player = Player {playerId :: Int, playerName :: T.Text, score :: Int} deriving (Show)
+-- "структура таблицы в базе данных для игры"
+data GameDb = GameDb {playerId :: T.Text, playerName :: T.Text, score :: Int} deriving (Show)
 
-data Id = Id (Maybe Int) deriving (Show)
+-- "структура числового строки-результата запроса SQL"
+data IntValueRow = IntValueRow (Maybe Int) deriving (Show)
 
-instance FromRow Player where
-  fromRow = Player <$> field <*> field <*> field
+-- "структура символьного строки-результата запроса SQL"
+data TextValueRow = TextValueRow (Maybe T.Text) deriving (Show)
 
-instance FromRow Id where
-  fromRow = Id <$> field
+instance FromRow GameDb where
+  fromRow = GameDb <$> field <*> field <*> field
 
-instance ToRow Player where
-  toRow (Player playerId playerName score) = toRow (playerId, playerName, score)
+instance FromRow IntValueRow where
+  fromRow = IntValueRow <$> field
 
-setPlayerRecord :: String -> Int -> IO Int
-setPlayerRecord name score = do
-  conn <- open "players.db"
-  execute_ conn "CREATE TABLE IF NOT EXISTS players (playerId INTEGER PRIMARY KEY, playerName TEXT, score INTEGER)"
-  rowId <- generateNewId
-  execute conn "INSERT INTO players (playerId, playerName, score) VALUES (?, ?, ?)" (Player rowId (T.pack name) score)
+instance FromRow TextValueRow where
+  fromRow = TextValueRow <$> field
+
+instance ToRow GameDb where
+  toRow (GameDb playerId playerName score) = toRow (playerId, playerName, score)
+
+-- | Создание таблицы игры, если отсутствует таблица
+createTable :: IO ()
+createTable = do
+  conn <- open "game.db"
+  execute_ conn "CREATE TABLE IF NOT EXISTS game (playerId TEXT, playerName TEXT, score INTEGER)"
+
+-- | Создание данных для игрока
+createPlayerRecord :: String -> String -> Int -> IO ()
+createPlayerRecord playerId name score = do
+  conn <- open "game.db"
+  execute conn "INSERT INTO game (playerId, playerName, score) VALUES (?, ?, ?)" (GameDb (T.pack playerId) (T.pack name) score)
   close conn
-  return rowId
 
-updatePlayerRecord :: Int -> Int -> IO ()
-updatePlayerRecord id score = do
-  conn <- open "players.db"
-  executeNamed conn "UPDATE players SET score = :score WHERE playerId = :playerId" [":score" := score, ":playerId" := id]
-  close conn
+-- | Обновление данных для игрока, причем обновляется только если игрок набрал больше баллов чем раньше
+updatePlayerRecord :: String -> Int -> Int -> IO ()
+updatePlayerRecord id currentScore lastScore = do
+    conn <- open "game.db"
+    when (currentScore > lastScore) $ executeNamed conn "UPDATE game SET score = :score WHERE playerId = :playerId" [":score" := currentScore, ":playerId" := (T.pack id)]
+    close conn
 
-generateNewId :: IO Int
-generateNewId = do 
-  conn <- open "players.db"
-  r <- query_ conn "SELECT MAX(playerId) from players" :: IO [Id]
-  let rowId = getUniqueIdentifier r
-  return rowId
+-- | Если есть данные об игроке в базе, то берем максимум баллов
+getPlayerScoreFromDb :: String -> IO Int
+getPlayerScoreFromDb id = do
+  conn <- open "game.db" 
+  r <- queryNamed conn "SELECT MAX(score) from game WHERE playerId = :playerId" [":playerId" := (T.pack id)] :: IO [IntValueRow]
+  let score = getScore r
+  return score
 
-checkNullValue :: (Maybe Int) -> Int
-checkNullValue (Just a) = a
-checkNullValue Nothing = 0
+-- | Инициализация игры с базы данных, если есть сохраненная игра, то берется старые данные, иначе новые
+getGame :: String -> String -> IO Int
+getGame id name = do
+  conn <- open "game.db"
+  r <- queryNamed conn "SELECT playerId from game WHERE playerId = :playerId" [":playerId" := (T.pack id)] :: IO [TextValueRow]
+  maxScore <- (getPlayer r id name)
+  return maxScore
 
-getUniqueIdentifier :: [Id] -> Int
-getUniqueIdentifier [] = 0
-getUniqueIdentifier ((Id value):xs) = (checkNullValue (value)) + 1
+-- | Берем Just из Maybe
+getJustValue :: Maybe a -> a
+getJustValue (Just value) = value
 
-getScore :: Player -> Int  
-getScore (Player _ _ score) = score  
+-- | Инициализация игрока с базы данных, если есть сохраненный игрок, то берется старые баллы, иначе 0
+getPlayer :: [TextValueRow] -> String -> String -> IO Int
+getPlayer [] id name = do
+  createPlayerRecord id name 0
+  return 0
+getPlayer ((TextValueRow value):xs) id name = do 
+  score <- (getPlayerScoreFromDb (T.unpack (getJustValue value)))
+  return score
 
-getPlayerName :: Player -> String  
-getPlayerName (Player _ name _) = T.unpack name  
+-- | От результата запроса возвращаем числовую величину (баллы в частности)
+getScore :: [IntValueRow] -> Int  
+getScore [] = 0
+getScore ((IntValueRow value):xs) = (getJustValue value)
 
-getPlayerRecord :: Int -> IO [Player]
+-- | От результата запроса возвращаем структуру таблицы игры
+getPlayerRecord :: String -> IO [GameDb]
 getPlayerRecord id = do
-  conn <- open "players.db"
-  r <- queryNamed conn "SELECT * from players WHERE playerId = :playerId" [":playerId" := id] :: IO [Player]
-  close conn
-  return r
---
-getRanking :: IO [Player]
-getRanking = do
-  conn <- open "players.db"
-  r <- query_ conn "SELECT * from players ORDER BY score DESC LIMIT 10;" :: IO [Player]
+  conn <- open "game.db"
+  r <- queryNamed conn "SELECT * from game WHERE playerId = :playerId" [":playerId" := (T.pack id)] :: IO [GameDb]
   close conn
   return r
 
-removePlayerRecord :: String -> IO ()
-removePlayerRecord name = do
-  conn <- open "players.db"
-  execute conn "DELETE from players WHERE playerName = ?" (Only name)
+-- | От результата запроса возвращаем первые 10 лучших игроков в базе данных
+getRanking :: IO [GameDb]
+getRanking = do
+  conn <- open "game.db"
+  r <- query_ conn "SELECT * from game ORDER BY score DESC LIMIT 10;" :: IO [GameDb]
   close conn
+  return r

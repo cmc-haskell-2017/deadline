@@ -6,7 +6,11 @@ import Types
 
 main :: IO ()
 main = do
+  createTable
+  putStrLn "enter your ID"
+  id <- getLine
+  putStrLn "enter your name"
   name <- getLine
-  id <- (setPlayerRecord name 0)
+  score <- getGame id name
   images <- loadImages
-  runDeadline images name id
+  runDeadline images name id score
