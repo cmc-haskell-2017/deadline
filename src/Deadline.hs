@@ -10,10 +10,10 @@ import Handle
 import Update
 
 -- | Запустить игру «Deadline».
-runDeadline :: Images -> String -> String -> Int -> IO ()
-runDeadline images name id score = do
+runDeadline :: Images -> String -> Int -> IO ()
+runDeadline images id score = do
   g <- newStdGen
-  universe <- (pure (initUniverse g name id score))
+  universe <- (pure (initUniverse g id score))
   playIO display bgColor fps universe (drawUniverse images) handleUniverse updateUniverse
   where
     display = InWindow "DEADLINE" (screenWidth, screenHeight) (200, 200)

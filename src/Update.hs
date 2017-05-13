@@ -9,7 +9,7 @@ import Database
 updateUniverse :: Float -> Universe -> IO Universe
 updateUniverse dt u
   | isGameOver u = do 
-    updatePlayerRecord ((gameId) u) (truncate ((universeScore) u)) (maxScore u)
+    updatePlayerRecord (Types.id u) (truncate (universeScore u)) (maxScore u)
     universeReturn <- (pure (u { universeGameOver = Just initGameOver }))
     return universeReturn
   | fst (isWithPlatform dt u) = pure ((upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)})

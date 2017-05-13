@@ -8,15 +8,14 @@ import Graphics.Gloss.Juicy
 import Types
 
 -- | Инициализировать игровую вселенную.
-initUniverse :: StdGen -> String -> String -> Int -> Universe
-initUniverse g gameName id score = Universe
+initUniverse :: StdGen  -> String -> Int -> Universe
+initUniverse g paramId score = Universe
   { universePlatforms  = absolutePlatforms (initPlatforms g)
   , universePlayer = initPlayer
   , universeScore  = 0
   , universeBackground = initBackground
   , universeGameOver = Nothing
-  , name = gameName
-  , gameId = id
+  , Types.id = paramId
   , maxScore = score
   }
 

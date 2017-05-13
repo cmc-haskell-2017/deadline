@@ -9,6 +9,7 @@ import Types
 import Init
 import Update
 import Database
+import qualified Data.Text as T
 
 -- | Сдвинуть игрока влево.
 bumpPlayerLeft :: Universe -> Universe
@@ -50,11 +51,11 @@ stopPlayer u = u
 firstOfTuple :: Platform -> Int
 firstOfTuple (x, y, z) = truncate x
 
-printPlayers :: [GameDb] -> IO ()
+printPlayers :: [RankingRow] -> IO ()
 printPlayers (player : []) = do 
-  print player
+  putStrLn (((T.unpack (rankingPlayerName player)) ++ " scored: ") ++ (show (rankingPlayerScore player)))
 printPlayers (player : ps) = do 
-  print player
+  putStrLn (((T.unpack (rankingPlayerName player)) ++ " scored: ") ++ (show (rankingPlayerScore player)))
   printPlayers ps
 
 -- | Обработчик событий игры.
@@ -69,6 +70,6 @@ handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = pure (stopPlayer u)
 handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u  = do 
   record <- getRanking
   printPlayers record
-  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) (name u) (gameId u) (maxScore u)))
+  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) (Types.id u) (maxScore u)))
   return universeReturn
 handleUniverse _ u = pure u
