@@ -35,7 +35,8 @@ data Background = Background
   { bgHeight1 :: Float
   , bgHeight2 :: Float
   , bgSpeed :: Float
-  }
+  } 
+
 -- | Игрок.
 data Player = Player
   { playerWidth :: Width          -- ^ Положение игрока по горизонтали.
@@ -54,11 +55,15 @@ data Universe = Universe
   , universeBackground :: Background
   , universeGameOver :: Maybe Point
   , universeCannon :: Cannon
+  , universePlay :: Bool
+  , universeRobot :: Player
+  , time :: Float
   }
 
 -- | Изображения объектов.
 data Images = Images
   { imagePers  :: Picture   -- ^ Изображение персонажа.
+  , imageRobot :: Picture
   , imageBackground1  :: Picture
   , imageBackground2  :: Picture
   , imageGameOver :: Picture
@@ -81,7 +86,7 @@ data Bullet = Bullet
 
 -- |
 bulletSpeed :: Float
-bulletSpeed = 400
+bulletSpeed = 600
 
 -- | 
 cannonNormSpeed :: Float
@@ -89,11 +94,11 @@ cannonNormSpeed = 100
 
 -- | Время перезарядки.
 timeOfRecharge :: Float
-timeOfRecharge = 0.5
+timeOfRecharge = 1.0
 
 -- |
-heigthOfPlayer :: Float
-heigthOfPlayer = 1200 * 0.03
+heightOfPlayer :: Float
+heightOfPlayer = 1200 * 0.03
 
 -- |
 widthOfPlayer :: Float
@@ -109,7 +114,7 @@ bulletsHeight = 297 * 0.02
 
 -- | Ширина экрана.
 screenWidth :: Int
-screenWidth = 450
+screenWidth = 900
 
 -- | Высота экрана.
 screenHeight :: Int
@@ -133,7 +138,7 @@ screenDown = - fromIntegral screenHeight / 2
 
 -- | Ширина платформы.
 platformWidth :: Float
-platformWidth = 120
+platformWidth = 100
 
 -- | Высота платформы.
 platformHeight :: Float
@@ -141,7 +146,7 @@ platformHeight = 20
 
 -- Расстояние между платформами.
 defaultOffset :: Offset
-defaultOffset = 200
+defaultOffset = 150
 
 bgHeight :: Float
 bgHeight = 7900

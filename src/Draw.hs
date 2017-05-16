@@ -33,6 +33,12 @@ drawPlayer image player = translate x y (scale 0.1075 0.1075 image)
   where
     (x, y) = (playerWidth player, playerHeight player)
 
+-- | Нарисовать игрока.
+drawRobot :: Picture -> Player -> Picture
+drawRobot image player = translate x y (scale 0.033 0.033 image)
+  where
+    (x, y) = (playerWidth player, playerHeight player)
+
 -- | Нарисовать задний фон.
 drawBackground :: Picture -> Picture -> Background -> Picture
 drawBackground bg1 bg2 bg = pictures [ (translate 1 y1 bg1), (translate 1 y2 bg2)]
@@ -42,8 +48,8 @@ drawBackground bg1 bg2 bg = pictures [ (translate 1 y1 bg1), (translate 1 y2 bg2
 -- | Нарисовать границы сверху и снизу.
 drawBorders :: Picture
 drawBorders = translate (-w) h (scale 30 30 (pictures
-  [ color red (polygon [ (0, 0), (0, -2), (15, -2), (15, 0) ])            -- верхняя граница
-  , color red (polygon [ (0, -21.5), (0, -24), (15, -24), (15, -21.5) ]) -- нижняя граница
+  [ color red (polygon [ (0, 0), (0, -2), (30, -2), (30, 0) ])            -- верхняя граница
+  , color red (polygon [ (0, -21.5), (0, -24), (30, -24), (30, -21.5) ]) -- нижняя граница
   ]))
   where
     w = fromIntegral screenWidth / 2
@@ -88,6 +94,7 @@ drawUniverse images u = pictures(
   [ drawBackground (imageBackground1 images) (imageBackground2 images) (universeBackground u)
   , drawPlatforms  (universePlatforms u)
   , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
+  , pictures (map (drawRobot (imageRobot images)) [ (universeRobot u) ] ) 
   , drawBorders
   , drawText 5 4.5 (-1.5) "DEADLINE"
   , drawText 5 4.35 (-22.9) "exhaustion"

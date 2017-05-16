@@ -16,6 +16,8 @@ initUniverse g = Universe
   , universeBackground = initBackground
   , universeGameOver = Nothing
   , universeCannon = initCannon
+  , universePlay = True
+  , universeRobot = initPlayer
   }
 
 -- | Создать бесконечный список платформ.
@@ -23,7 +25,9 @@ absolutePlatforms :: [Platform] -> [Platform]
 absolutePlatforms = go 0  
   where
     go  _ [] = []
-    go  s ((w, o, t) : gs) = (w, s - o, t) : (go (s - o) gs)
+    go  s ((w1, o1, t1) : (w2, o2, t2) : gs) = if (w1 + platformWidth/2 + 30 > w2 - platformWidth/2 - 30) && (w1 - platformWidth/2 - 30 < w2 + platformWidth/2 + 30)
+                                               then (w1, s - o1, t1) : (go (s - o1) gs)
+                                               else (w1, s - o1, t1) : (w2, s - o2, t2) : (go (s - o1) gs)
 
 -- | Инициализировать начальное состояние игрока.
 initPlayer :: Player

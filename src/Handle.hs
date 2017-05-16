@@ -8,12 +8,16 @@ import Graphics.Gloss.Juicy
 import Types
 import Init
 import Update
+import Collides
 
 -- | Сдвинуть игрока влево.
 bumpPlayerLeft :: Universe -> Universe
-bumpPlayerLeft u = u
-  { universePlayer = bump (universePlayer u)
-  }
+bumpPlayerLeft u 
+  | collidesHelper (rotateLeft (playerSquare (universePlayer u) (time u))) (rotateLeft (playerSquare (universeRobot u) (time u))) = u
+    { universePlayer = (universePlayer u) { playerSpeed = 0.0}}
+  | otherwise = u
+    { universePlayer = bump (universePlayer u)
+    }
   where
     bump player = player {
     playerSpeed = -bumpSpeed }
@@ -21,15 +25,17 @@ bumpPlayerLeft u = u
 -- | Сдвинуть игрока вверх.
 bumpPlayerUp :: Universe -> Universe
 bumpPlayerUp u = u
-  { universePlayer = bump (universePlayer u)
-  }
+  { universePlayer = bump (universePlayer u)}
   where
     bump player = player {
     playerFallingSpeed = jumpSpeed }
 
 -- |Сдвинуть игрока вправо.
 bumpPlayerRight :: Universe -> Universe
-bumpPlayerRight u = u
+bumpPlayerRight u 
+  | collidesHelper (rotateRight (playerSquare (universePlayer u) (time u))) (rotateRight (playerSquare (universeRobot u) (time u))) = u
+    { universePlayer = (universePlayer u) { playerSpeed = 0.0}}
+  | otherwise = u
   { universePlayer = bump (universePlayer u)
   }
   where
