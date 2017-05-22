@@ -1,7 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- it's John Kim's code. Do never think to copy / paste :)
-
 module Database where
 
 import           Control.Applicative
@@ -53,27 +51,28 @@ createTable = do
   execute_ conn "CREATE TABLE IF NOT EXISTS game (gameId TEXT, score INTEGER)"
   execute_ conn "CREATE TABLE IF NOT EXISTS player (playerId TEXT, playerPassword TEXT, playerName TEXT)"
 
--- | Создание данных для игрока
+-- | Создание данных для игры
 createGameRecord :: String -> Int -> IO ()
 createGameRecord gameId score = do
   conn <- open "game.db"
   execute conn "INSERT INTO game (gameId, score) VALUES (?, ?)" (GameDb (T.pack gameId) score)
   close conn
 
+-- | Создание данных для игрока
 createPlayerRecord :: String -> String -> String -> IO ()
 createPlayerRecord playerId playerPassword name = do
   conn <- open "game.db"
   execute conn "INSERT INTO player (playerId, playerPassword, playerName) VALUES (?, ?, ?)" (PlayerDb (T.pack playerId) (T.pack playerPassword) (T.pack name))
   close conn
 
--- | Обновление данных для игрока, причем обновляется только если игрок набрал больше баллов чем раньше
+-- | Обновление данных игры, причем обновляется только если игрок набрал больше баллов чем раньше
 updatePlayerRecord :: String -> Int -> Int -> IO ()
 updatePlayerRecord id currentScore lastScore = do
     conn <- open "game.db"
     when (currentScore > lastScore) $ executeNamed conn "UPDATE game SET score = :score WHERE gameId = :gameId" [":score" := currentScore, ":gameId" := (T.pack id)]
     close conn
 
--- | Если есть данные об игроке в базе, то берем максимум баллов
+-- | Если есть данные об игроке в базе, то берем максимум его баллов
 getPlayerScoreFromDb :: String -> IO Int
 getPlayerScoreFromDb id = do
   conn <- open "game.db" 
@@ -81,6 +80,7 @@ getPlayerScoreFromDb id = do
   let score = getScore r
   return score
 
+-- | Осуществляем вход, если пользователь с таким логином не существует, то просим его имя и регистрируем его
 loginPlayer :: String -> String -> IO Int
 loginPlayer id password = do
   conn <- open "game.db"
@@ -89,6 +89,7 @@ loginPlayer id password = do
   score <- (registerPlayer isRegistered id password)
   return score
 
+-- | Регистрация пользователя, запрашиваем имя
 registerPlayer :: Bool -> String -> String -> IO Int
 registerPlayer isRegistered id password 
   | isRegistered = do 
@@ -113,12 +114,12 @@ getGame id = do
 getJustValue :: Maybe a -> a
 getJustValue (Just value) = value
 
--- | Инициализация игрока с базы данных, если есть сохраненный игрок, то берется старые баллы, иначе 0
+-- | Проверка результата возврата с бд, если что-то возвращается (непустой список), то это значит, что уже есть такой пользователь
 checkPlayerRegistered :: [TextValueRow] -> Bool
 checkPlayerRegistered [] = False
 checkPlayerRegistered ((TextValueRow value):xs) = True
 
--- | Инициализация игрока с базы данных, если есть сохраненный игрок, то берется старые баллы, иначе 0
+-- | Инициализация баллов игрока с базы данных, если есть сохраненные баллы игрока, то берется старые баллы, иначе 0
 getGameScore :: [TextValueRow] -> String -> IO Int
 getGameScore [] id = do
   createGameRecord id 0
