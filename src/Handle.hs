@@ -70,6 +70,6 @@ handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = pure (stopPlayer u)
 handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u  = do 
   record <- getRanking
   printPlayers record
-  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) (Types.id u) (maxScore u)))
+  universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) (Types.id u) (truncate (universeScore u))))
   return universeReturn
 handleUniverse _ u = pure u

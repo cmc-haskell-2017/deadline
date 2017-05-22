@@ -7,9 +7,9 @@ import Types
 main :: IO ()
 main = do
   createTable
-  putStrLn "enter your ID: "
+  putStrLn "enter your username: "
   id <- getLine
-  putStrLn "enter your Password: "
+  putStrLn "enter your password: "
   password <- getLine
   score <- loginPlayer id password
   images <- loadImages
