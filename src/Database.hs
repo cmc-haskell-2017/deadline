@@ -145,6 +145,6 @@ getPlayerRecord id = do
 getRanking :: IO [RankingRow]
 getRanking = do
   conn <- open "game.db"
-  r <- query_ conn "SELECT player.playerName, game.score FROM game INNER JOIN player ON game.gameId=player.playerId ORDER BY score DESC LIMIT 10 ;" :: IO [RankingRow]
+  r <- query_ conn "SELECT player.playerId, game.score FROM game INNER JOIN player ON game.gameId=player.playerId ORDER BY score DESC LIMIT 10 ;" :: IO [RankingRow]
   close conn
   return r

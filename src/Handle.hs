@@ -51,11 +51,19 @@ stopPlayer u = u
 firstOfTuple :: Platform -> Int
 firstOfTuple (x, y, z) = truncate x
 
+printBlank :: IO ()
+printBlank = do
+  putStrLn "-----------------------------------"
+
+printCurrentPlayer :: Universe -> IO ()
+printCurrentPlayer u = do
+  putStrLn ((Types.id u) ++ (" scored: " ++ (show (truncate (universeScore u)))) )
+
 printPlayers :: [RankingRow] -> IO ()
 printPlayers (player : []) = do 
-  putStrLn (((T.unpack (rankingPlayerName player)) ++ " scored: ") ++ (show (rankingPlayerScore player)))
+  putStrLn (((T.unpack (rankingPlayerName player)) ++ "'s highscore: ") ++ (show (rankingPlayerScore player)))
 printPlayers (player : ps) = do 
-  putStrLn (((T.unpack (rankingPlayerName player)) ++ " scored: ") ++ (show (rankingPlayerScore player)))
+  putStrLn (((T.unpack (rankingPlayerName player)) ++ "'s highscore: ") ++ (show (rankingPlayerScore player)))
   printPlayers ps
 
 -- | Обработчик событий игры.
@@ -68,6 +76,8 @@ handleUniverse (EventKey (SpecialKey KeyRight) Down _ _) u = pure (bumpPlayerRig
 handleUniverse (EventKey (SpecialKey KeyLeft) Up _ _) u = pure (stopPlayer u)
 handleUniverse (EventKey (SpecialKey KeyRight) Up _ _) u = pure (stopPlayer u)
 handleUniverse (EventKey (SpecialKey KeySpace) Down _ _) u  = do 
+  printBlank
+  printCurrentPlayer u
   record <- getRanking
   printPlayers record
   universeReturn <- (pure (initUniverse (mkStdGen (firstOfTuple (head (universePlatforms u)))) (Types.id u) (truncate (universeScore u))))
