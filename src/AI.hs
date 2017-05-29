@@ -9,62 +9,107 @@ import Estimate
  
 -- | Обновить состояние ИИ.
 updateRobot :: Float -> Universe -> Player
-updateRobot dt u = (newAI (universeRobot u) dt u (betterMove (bestMoves (getEstimate dt (gameTree treeDepth u dt)))))
+updateRobot dt u = newAI dt u (definitionOfStrategy dt u)
 
--- | Создать дерево игры глубины n.
-gameTree :: Int -> Universe -> Float -> GameTree Universe
-gameTree 1 u _ = Leaf u
-gameTree n u dt 
-  | not (universePlay u) = Leaf u
-  | otherwise = Node ([ (Move { moveWidth = 0, moveJump = False, moveUniverse = universeNo}, gameTree (n - 1) universeNo dt)]
-                     ++ (maybeRight n dt u)
-                     ++ (maybeLeft n dt u) 
-                     ++ (maybeJump n dt u))
+-- | Определить нужную стратегию.
+definitionOfStrategy :: Float -> Universe -> Strategy
+definitionOfStrategy dt u 
+  | estimateScreenUp dt u = newStrategy FromPlatform (0, 0, -1) False
+  | estimateBullet dt u = newStrategy FromBullet (0, 0, -1) False
+  | otherwise = newStrategy OnPlatform (0, 0, -1) False
+
+-- | Выбрать соответствующую стратегию.
+newAI :: Float -> Universe -> Strategy -> Player
+newAI dt u strategy 
+  | falseTransition (playerStrategy (universeRobot u)) = strategyOnPlatform dt u
+  | (enumStrategy strategy == OnPlatform) && (enumStrategy (playerStrategy (universeRobot u)) == FromPlatform) = strategyfalseTransition dt u
+  | enumStrategy strategy == OnPlatform = strategyOnPlatform dt u 
+  | enumStrategy strategy == FromPlatform = strategyFromPlatform dt u
+  | enumStrategy strategy == FromBullet = strategyFromBullet dt u
+
+-- |Реализовать стратегию ложного перехода.
+strategyfalseTransition :: Float -> Universe -> Player
+strategyfalseTransition dt u
+  | offset + 3 * platformHeight/4 < playerHeight (universeRobot u) - heightOfPlayer = falseTransitionWhile dt u
+  | otherwise = falseTransitionEnd dt u
   where 
-    universeNo = (maybeUniverse u dt 0)
-    universeRight = (maybeUniverse u dt bumpSpeed)
-    universeLeft = (maybeUniverse u dt (-bumpSpeed))
+    (width, offset, life) = strategyPlatform (playerStrategy (universeRobot u))
 
--- |
-maybeJump :: Int -> Float -> Universe -> [(Move, GameTree Universe)]
-maybeJump n dt u 
-  | (fst (isWithPlatform dt (universeRobot u) u)) && (not (collidesHelper (playerSquare (universePlayer u) dt) (playerSquare (universeRobot u) dt))) = (Move { moveWidth = 0, moveJump = True, moveUniverse = universeJump}, gameTree (n - 1) universeJump dt) : []
-  | otherwise = []
-  where universeJump = maybeUniverse (bumpUp u) dt 0
+-- | Реализовать стратегию ложного перехода, пока не исчезнет возможность взобраться обратно на платформу.
+falseTransitionWhile :: Float -> Universe -> Player
+falseTransitionWhile dt u = ai dt (helpAI u 0 (newStrategy FromPlatform (width, offset + dt * speed, life) False)) u
+  where 
+    (width, offset, life) = strategyPlatform (playerStrategy (universeRobot u))
 
--- |
-maybeLeft :: Int -> Float -> Universe -> [(Move, GameTree Universe)]
-maybeLeft n dt u 
-  | collidesHelper (rotateLeft (playerSquare (universeRobot u) dt)) (rotateLeft (playerSquare (universePlayer u) dt)) = []
-  | otherwise = [(Move { moveWidth = -bumpSpeed, moveJump = False, moveUniverse = universeLeft}, gameTree (n - 1) universeLeft dt)]
-  where universeLeft = (maybeUniverse u dt (-bumpSpeed))
+-- | Реализовать стратегию ложного перехода. Завершение стратегии.
+falseTransitionEnd :: Float -> Universe -> Player
+falseTransitionEnd dt u = ai dt (helpAI u 0 (newStrategy FromPlatform (width, offset + dt * speed, life) True)) u
+  where 
+    (width, offset, life) = strategyPlatform (playerStrategy (universeRobot u))    
 
--- |
-maybeRight :: Int -> Float -> Universe -> [(Move, GameTree Universe)]
-maybeRight n dt u 
-  | collidesHelper (rotateRight (playerSquare (universeRobot u) dt)) (rotateRight (playerSquare (universePlayer u) dt)) = []
-  | otherwise = [(Move { moveWidth = bumpSpeed, moveJump = False, moveUniverse = universeRight}, gameTree (n - 1) universeRight dt)]
-  where universeRight = (maybeUniverse u dt bumpSpeed)
+-- | Реализовать стратегию на платформу.
+strategyOnPlatform :: Float -> Universe -> Player
+strategyOnPlatform dt u 
+  | fst (isWithPlatform dt (universeRobot u) u) = ai dt (helpAI u  0 (newStrategy OnPlatform platform False)) u
+  | (enumStrategy (playerStrategy (universeRobot u)) == FromPlatform) = strategyHelp dt u
+  | (width + platformWidth/2 < playerWidth (universeRobot u) - widthOfPlayer/2) = ai dt (helpAI u (-speed) (newStrategy OnPlatform (width, offset, life) False)) u
+  | (width - platformWidth/2 > playerWidth (universeRobot u) + widthOfPlayer/2) = ai dt (helpAI u speed (newStrategy OnPlatform (width, offset, life) False)) u
+  | otherwise = ai dt (helpAI u 0 (newStrategy OnPlatform (width, offset, life) False)) u
+  where 
+    platform = thisPlatform dt (universeRobot u) (universePlatforms u)
+    (width, offset, life) = helpThisPlatform dt u
+     
 
+-- | Обновление предпочтительной платформы.
+helpThisPlatform :: Float -> Universe -> Platform
+helpThisPlatform dt u
+  | (o + platformHeight/2 > (playerHeight (universeRobot u)) - heightOfPlayer/2) || (l < 0) = (w1, o1 + dt * speed, l1)
+  | otherwise = (w, o + dt * speed, l)
+  where
+    (w, o, l) = strategyPlatform (playerStrategy (universeRobot u))
+    (w1, o1, l1) = bestPlatformWithout dt (universeRobot u) (strategyPlatform (playerStrategy (universeRobot u))) (mapPlatforms dt (universeRobot u) (universePlatforms u)) 
 
--- | Сдвинуть игрока вверх.
-bumpUp :: Universe -> Universe
-bumpUp u = u
-  { universeRobot = (universeRobot u) { playerFallingSpeed = jumpSpeed }
-  }
+-- | Реализовать стратегию на платформу, если до этого ИИ имел стратегию уйти с платформы.
+strategyHelp :: Float -> Universe -> Player
+strategyHelp dt u
+  | (width + platformWidth/2 < playerWidth player - widthOfPlayer/2) = ai dt (helpAI u (- speed) (newStrategy OnPlatform (width, offset + dt * speed, life) False)) u
+  | (width - platformWidth/2 > playerWidth player + widthOfPlayer/2) = ai dt (helpAI u speed (newStrategy OnPlatform (width, offset + dt * speed, life) False)) u
+  | otherwise = ai dt (player {playerSpeed = 0, playerStrategy = newStrategy OnPlatform (width, offset + dt * speed, life) False}) u
+  where
+    player = universeRobot u
+    (width, offset, life) = bestPlatformWithout dt (universeRobot u) (strategyPlatform (playerStrategy (universeRobot u))) (mapPlatforms dt (universeRobot u) (universePlatforms u)) 
 
--- | Предполагаемое обновление вселенной.
-maybeUniverse :: Universe -> Float -> Float -> Universe
-maybeUniverse u dt speed = newUniverse { universePlay = not (isGameOver dt (universeRobot newUniverse) newUniverse)}
-  where newUniverse = (maybeUniverseHelp u dt speed)
+-- | Реализовать стратегию уйти с платформы.
+strategyFromPlatform :: Float -> Universe -> Player
+strategyFromPlatform dt u  
+  | life1 < 0 = ai dt (helpAI u 0 (newStrategy FromPlatform (width, offset + dt * speed, life) False)) u
+  | width < (playerWidth (universeRobot u)) = ai dt (helpAI u speed (newStrategy FromPlatform (width, offset + dt * speed, life) False)) u
+  | otherwise = ai dt (helpAI u (- speed) (newStrategy FromPlatform (width, offset + dt * speed, life) False)) u
+  where 
+    (width, offset, life) = thisPlatform dt (universeRobot u) (universePlatforms u)
+    (width1, offset1, life1) = bestPlatformWithout dt (universeRobot u) (thisPlatform dt (universeRobot u) (universePlatforms u)) (mapPlatforms dt (universeRobot u) (universePlatforms u)) 
 
--- |
-maybeUniverseHelp :: Universe -> Float -> Float -> Universe
-maybeUniverseHelp u dt speed = Universe{
-  universePlayer = universePlayer u,
-  universePlatforms = updatePlatforms dt (universePlatforms u) u,                 
-  universeCannon = (universeCannon u){ cannonBullets = updateBullets dt u (cannonBullets (universeCannon u))},
-  universeRobot = ai dt ((universeRobot u){playerSpeed = speed}) u
+-- | Реализовать стратегию уйти от пули.
+strategyFromBullet :: Float -> Universe -> Player
+strategyFromBullet dt u 
+  | width < (playerWidth (universeRobot u)) = ai dt (helpAI u (- speed) (newStrategy FromBullet (width, offset + dt * speed, life) False)) u
+  | otherwise = ai dt (helpAI u speed (newStrategy FromBullet (width, offset + dt * speed, life) False)) u
+  where 
+    (width, offset, life) = strategyPlatform (playerStrategy (universeRobot u))
+
+-- | Обновить скорость и стратегию ИИ.
+helpAI :: Universe -> Float -> Strategy -> Player
+helpAI u sp strategy = (universeRobot u){
+  playerSpeed = sp, 
+  playerStrategy = strategy
+}
+
+-- | Обновить стратегию ИИ.
+newStrategy :: EnumStrategy -> Platform -> Bool -> Strategy
+newStrategy enum platform fT = Strategy {
+  enumStrategy = enum, 
+  strategyPlatform = platform, 
+  falseTransition = fT
 }
 
 -- | Предполагаемое обновление ИИ.
@@ -73,34 +118,3 @@ ai dt aiplayer u
   | fst (isWithPlatform dt (universeRobot u) u) =  keepPlayer dt aiplayer
   | snd (isWithPlatform dt (universeRobot u) u) =  holdPlayer dt aiplayer
   | otherwise = updatePlayer dt aiplayer
-
--- |
-bestMoves :: GameTree Estimate -> GameTree BestMove
-bestMoves (Leaf _) = Leaf NoMove
-bestMoves (Node trees) = Node (map g trees)
-  where g (move, tree) = (move, gtmap (\a -> (BestMove move a)) tree)
-
--- |
-betterMove :: GameTree BestMove -> BestMove
-betterMove (Leaf a) = a
-betterMove (Node tree) = maxEstimate (map g tree)
-  where g (_, btree) = betterMove btree
-
--- |
-maxEstimate :: [BestMove] -> BestMove
-maxEstimate [] = NoMove
-maxEstimate (x: []) = x
-maxEstimate (NoMove : xs) = maxEstimate xs
-maxEstimate (x : NoMove : xs) = maxEstimate (x : xs)
-maxEstimate ((BestMove m1 e1) : (BestMove m2 e2): ss)
-  | e1 >= e2 = maxEstimate ((BestMove m1 e1) : ss)
-  | otherwise = maxEstimate ((BestMove m2 e2) : ss)
-
--- |
-newAI :: Player -> Float -> Universe -> BestMove -> Player 
-newAI aiplayer dt u (NoMove) = ai dt (aiplayer{playerSpeed = 0}) u
-newAI aiplayer dt u (BestMove move _) 
-  | moveJump move = ai dt (aiplayer{playerSpeed = moveWidth move, playerFallingSpeed = jumpSpeed}) u
-  | otherwise = ai dt (aiplayer{playerSpeed = moveWidth move}) u
-  
-

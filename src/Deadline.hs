@@ -32,6 +32,7 @@ loadImages = do
   Just cannon  <- loadJuicyPNG "src/cannon.png"
   Just bullets <- loadJuicyPNG "src/bullet.png"
   Just robot   <- loadJuicyPNG "src/robot.png"
+  Just plat <- loadJuicyPNG "src/plat.png"
   return Images
     { imagePers   = scale 3 3 pers
     , imageRobot = scale 3 3 robot
@@ -40,13 +41,14 @@ loadImages = do
     , imageGameOver = scale 3 3 gover
     , imageCannon = scale 3 3 cannon
     , imageBullets = scale 3 3 bullets
+    , imagePlat = scale 3 3 plat
     }
 
 -- | Обновить состояние игровой вселенной.
 updateUniverse :: Float -> Universe -> Universe
 updateUniverse dt u
   | not(universePlay u) = u
-  | (isGameOver dt (universePlayer u) u) || (isGameOver dt (universeRobot u) u) = u { universeGameOver = Just initGameOver
+  | ((isGameOver dt (universePlayer u) u) && livePlayer) || (isGameOver dt (universeRobot u) u) = u { universeGameOver = Just initGameOver
                         , universePlay = False }
   | fst (isWithPlatform dt (universePlayer u) u) = (upUniverse dt u) {universePlayer = keepPlayer dt (universePlayer u)}
   | snd (isWithPlatform dt (universePlayer u) u) = (upUniverse dt u) {universePlayer = holdPlayer dt (universePlayer u)}

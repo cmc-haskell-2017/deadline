@@ -26,6 +26,12 @@ drawPlatform p = (pictures [ color (makeColorI 0 66 72 255) (pictures (map drawB
     drawBox3 ((l, b), (r, t)) = polygon
       [ (l, t-3), (l+3, t), (r, b+3), (r-3, b) ]
 
+-- |
+drawPlat :: Platform -> Picture -> Picture
+drawPlat (width, offset, _) image = translate x y (scale 0.075 0.03 image)
+  where
+    (x, y) = (width, offset)
+
 
 -- | Нарисовать игрока.
 drawPlayer :: Picture -> Player -> Picture
@@ -93,11 +99,10 @@ drawUniverse :: Images -> Universe -> Picture
 drawUniverse images u = pictures(
   [ drawBackground (imageBackground1 images) (imageBackground2 images) (universeBackground u)
   , drawPlatforms  (universePlatforms u)
-  , pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] ) 
   , pictures (map (drawRobot (imageRobot images)) [ (universeRobot u) ] ) 
   , drawBorders
   , drawText 5 4.5 (-1.5) "DEADLINE"
   , drawText 5 4.35 (-22.9) "exhaustion"
   , drawText 5 1 (-1.5) (show (truncate (universeScore u)))
   , drawCannon (imageCannon images) (universeCannon u)
-  ] ++ (map (drawBullets (imageBullets images)) (cannonBullets (universeCannon u))) ++ [drawGameOver (imageGameOver images) (universeGameOver u)])
+  ] ++ (if livePlayer then [pictures (map (drawPlayer (imagePers images)) [ (universePlayer u) ] )] else []) ++ (map (drawBullets (imageBullets images)) (cannonBullets (universeCannon u))) ++ [drawGameOver (imageGameOver images) (universeGameOver u)] ++ (if testDraw then [drawPlat (strategyPlatform (playerStrategy (universeRobot u))) (imagePlat images)] else []))

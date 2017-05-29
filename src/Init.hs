@@ -37,6 +37,7 @@ initPlayer = Player
   , playerSpeed = 0
   , playerIsOnPlatform = False
   , playerFallingSpeed  = 0
+  , playerStrategy = Strategy {enumStrategy = No, strategyPlatform = (-1200, -1200, -1.0), falseTransition = False}
   }
 
 -- | Инициализировать одну платформу.

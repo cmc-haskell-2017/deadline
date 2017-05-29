@@ -63,7 +63,7 @@ updatePlatforms dt ((width, offset, time) : platforms) u
   | screenUp < offset = updatePlatforms dt platforms u
   | isKilledPlatform dt u (width, offset, time) = updatePlatforms dt platforms u
   | time - dt < 0 = updatePlatforms dt platforms u
-  | collidesHelper (playerSquare player dt) (platformSquare (width, offset, time) dt) = (width, offset + dy, time - dt) : (updatePlatforms dt platforms u)
+  | (collidesHelper (playerSquare player dt) (platformSquare (width, offset, time) dt)) &&  livePlayer = (width, offset + dy, time - dt) : (updatePlatforms dt platforms u)
   | otherwise = (width, offset + dy, time) : (updatePlatforms dt platforms u)
   where
         player = universePlayer u

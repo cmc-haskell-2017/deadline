@@ -44,6 +44,7 @@ data Player = Player
   , playerSpeed :: Float          -- ^ Скорость движения игрока по горизонтали.
   , playerFallingSpeed :: Float   -- ^ Скорость падения игрока.
   , playerIsOnPlatform :: Bool
+  , playerStrategy :: Strategy
   }
 
 
@@ -69,6 +70,7 @@ data Images = Images
   , imageGameOver :: Picture
   , imageCannon :: Picture
   , imageBullets :: Picture
+  , imagePlat :: Picture
   }
 
 -- | Пушка.
@@ -84,31 +86,34 @@ data Bullet = Bullet
   , bulletHeight :: Height
   }
 
--- |
+-- | Виды стратегии.
+data EnumStrategy = OnPlatform | FromPlatform | FromBullet | No deriving (Eq)
+
+-- | Скорость пули.
 bulletSpeed :: Float
 bulletSpeed = 600
 
--- | 
+-- | Скорость пушки.
 cannonNormSpeed :: Float
 cannonNormSpeed = 100
 
 -- | Время перезарядки.
 timeOfRecharge :: Float
-timeOfRecharge = 1.0
+timeOfRecharge = 30.0
 
--- |
+-- | Высота игрока.
 heightOfPlayer :: Float
 heightOfPlayer = 1200 * 0.03
 
--- |
+-- | Ширина игрока.
 widthOfPlayer :: Float
 widthOfPlayer = 800 * 0.03
 
--- | 
+-- | Ширина пули.
 bulletsWidth :: Float
 bulletsWidth = 590 * 0.01
 
--- |
+-- | Высота пули.
 bulletsHeight :: Float
 bulletsHeight = 297 * 0.02
 
@@ -166,7 +171,7 @@ platformBoxes (x, y, _) = [((x - w, y), (x + w, y + h))]
 
 -- | Скорость движения игрока по вселенной (в пикселях в секунду).
 speed :: Float
-speed = 200
+speed = 300
 
 jumpSpeed :: Float
 jumpSpeed = 480
@@ -186,3 +191,18 @@ gravity = -970
 -- | Время жизни платформы.
 timeOfLife :: Float
 timeOfLife = 1.0
+
+-- | Включен ли персонаж.
+livePlayer :: Bool
+livePlayer = False
+
+-- | Надо ли нарисовать платформу, на которую предполагает попасть ИИ.
+testDraw :: Bool
+testDraw = False
+
+-- | Стратегия со вспомогательными параметрами.
+data Strategy = Strategy 
+  { enumStrategy :: EnumStrategy
+  , strategyPlatform :: Platform
+  , falseTransition :: Bool
+  }

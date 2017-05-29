@@ -40,10 +40,10 @@ updateCannon dt u | under = cannonShot dt u
 -- |
 whereCannon :: Universe -> (Bool, Bool, Bool)
 whereCannon u 
-  | abs (playerWidth (universePlayer u) - cannon) > abs (playerWidth (universeRobot u) - cannon) = (
-    or[and 
+  | (not livePlayer) || (abs (playerWidth (universePlayer u) - cannon) > abs (playerWidth (universeRobot u) - cannon)) = (
+    or[(if livePlayer then (and 
       [ playerLeft < cannon
-      , playerRight > cannon], and [ aiLeft < cannon
+      , playerRight > cannon]) else False), and [ aiLeft < cannon
                                    , aiRight > cannon]],
     aiLeft > cannon,
     aiRight < cannon)
